@@ -32,14 +32,13 @@ app.get('/webhook', (req, res) => {
 app.post('/webhook', (req, res) => {
     let body = req.body;
 
-    // Log the incoming request
-    console.log('Received POST request:', JSON.stringify(body, null, 2));
+    console.log(JSON.stringify(body, null, 2));
 
     if (body.object) {
         console.log('Body object exists');
 
         if (body.entry &&
-            body.entry[0].changes[0] &&
+            body.entry[0].changes &&
             body.entry[0].changes[0].value.messages &&
             body.entry[0].changes[0].value.messages[0]
         ) {
@@ -49,7 +48,9 @@ app.post('/webhook', (req, res) => {
             let from = body.entry[0].changes[0].value.messages[0].from;
             let msg = body.entry[0].changes[0].value.messages[0].text.body;
 
-            console.log(`Sending message to: ${from}`);
+            console.log('phone number: ' + phone_number_id)
+            console.log('from: ' + from)
+            console.log('message: ' + msg)
 
             axios({
                 method: "POST",
