@@ -54,12 +54,42 @@ app.post('/webhook', (req, res) => {
 
             axios({
                 method: "POST",
-                url: `https://graph.facebook.com/v20.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
+                url: `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
                 data: {
+                    recipient_type: "individual",
                     messaging_product: "whatsapp",
                     to: from,
-                    text: {
-                        body: "Bem Vindo ao Hygia"
+                    type: "interactive",
+                    interactive: {
+                        type: "flow",
+                        header: {
+                            type: "text",
+                            text: "Flow message header"
+                        },
+                        body: {
+                            text: "Flow message body"
+                        },
+                        footer: {
+                            text: "Flow message footer"
+                        },
+                        action: {
+                            name: "flow",
+                            parameters: {
+                                flow_message_version: "3",
+                                flow_token: "AQAAAAACS5FpgQ_cAAAAAD0QI3s.",
+                                flow_id: "1",
+                                flow_cta: "Book!",
+                                flow_action: "navigate",
+                                flow_action_payload: {
+                                    screen: "<SCREEN_NAME>",
+                                    data: {
+                                        product_name: "name",
+                                        product_description: "description",
+                                        product_price: 100
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 headers: {
