@@ -61,34 +61,31 @@ app.post('/webhook', (req, res) => {
                     to: from,
                     type: "interactive",
                     interactive: {
-                        type: "flow",
+                        type: "list",
                         header: {
                             type: "text",
-                            text: "Flow message header"
+                            text: "<MESSAGE_HEADER_TEXT"
                         },
                         body: {
-                            text: "Flow message body"
+                            text: "<MESSAGE_BODY_TEXT>"
                         },
                         footer: {
-                            text: "Flow message footer"
+                            text: "<MESSAGE_FOOTER_TEXT>"
                         },
                         action: {
-                            name: "flow",
-                            parameters: {
-                                flow_message_version: "3",
-                                flow_token: "AQAAAAACS5FpgQ_cAAAAAD0QI3s.",
-                                flow_id: "1",
-                                flow_cta: "Book!",
-                                flow_action: "navigate",
-                                flow_action_payload: {
-                                    screen: "<SCREEN_NAME>",
-                                    data: {
-                                        product_name: "name",
-                                        product_description: "description",
-                                        product_price: 100
-                                    }
+                        sections: [
+                            {
+                            title: "<SECTION_TITLE_TEXT>",
+                            rows: [
+                                {
+                                id: "<ROW_ID>",
+                                title: "<ROW_TITLE_TEXT>",
+                                description: "<ROW_DESCRIPTION_TEXT>"
                                 }
+                            ]
                             }
+                        ],
+                        button: "<BUTTON_TEXT>",
                         }
                     }
                 },
@@ -102,7 +99,6 @@ app.post('/webhook', (req, res) => {
         }
     }
 });
-
 
 app.get('/', (req, res) => {
     res.status(200).send('Hello, word! my name is Hygia')
