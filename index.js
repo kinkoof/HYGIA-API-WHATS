@@ -63,6 +63,7 @@ app.post('/webhook', (req, res) => {
                     interactive: {
                         type: "button",
                         header: {
+                            type: "text",
                             text: "Bem Vindo"
                         },
                         body: {
