@@ -56,36 +56,43 @@ app.post('/webhook', (req, res) => {
                 method: "POST",
                 url: `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
                 data: {
-                    recipient_type: "individual",
                     messaging_product: "whatsapp",
+                    recipient_type: "individual",
                     to: from,
                     type: "interactive",
                     interactive: {
-                        type: "list",
+                        type: "button",
                         header: {
-                            type: "text",
-                            text: "<MESSAGE_HEADER_TEXT"
+                            text: "Bem Vindo"
                         },
                         body: {
-                            text: "<MESSAGE_BODY_TEXT>"
-                        },
-                        footer: {
-                            text: "<MESSAGE_FOOTER_TEXT>"
+                            text: "Bem vindo ao Hygia, como podemos te ajudar hoje?"
                         },
                         action: {
-                        sections: [
-                            {
-                            title: "<SECTION_TITLE_TEXT>",
-                            rows: [
+                            buttons:[
                                 {
-                                id: "<ROW_ID>",
-                                title: "<ROW_TITLE_TEXT>",
-                                description: "<ROW_DESCRIPTION_TEXT>"
+                                    type: "reply",
+                                    reply:{
+                                        id: "buy",
+                                        title: "Comprar medicamentos"
+                                    }
+                                },
+                                {
+                                    type: "reply",
+                                    reply:{
+                                        id: "login",
+                                        title: "Entrar em sua conta"
+                                    }
+                                },
+                                {
+                                    type: "reply",
+                                    reply:{
+                                        id: "register",
+                                        title: "Se registrar"
+                                    }
                                 }
                             ]
-                            }
-                        ],
-                        button: "<BUTTON_TEXT>",
+
                         }
                     }
                 },
