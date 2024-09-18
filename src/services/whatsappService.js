@@ -15,32 +15,32 @@ const sendButtonsMessage = async (phone_number_id, from) => {
                     type: "button",
                     header: {
                         type: "text",
-                        text: "Escolha uma opção"
+                        text: "Bem vindo ao Hygia! Como podemos te ajudar hoje?"
                     },
                     body: {
-                        text: "Selecione uma das opções abaixo:"
+                        text: "Por favor selecione uma opção:"
                     },
                     action: {
                         buttons: [
                             {
                                 type: "reply",
                                 reply: {
-                                    id: "option_1",
-                                    title: "Opção 1"
+                                    id: "buy",
+                                    title: "Comprar produtos"
                                 }
                             },
                             {
                                 type: "reply",
                                 reply: {
-                                    id: "option_2",
-                                    title: "Opção 2"
+                                    id: "login",
+                                    title: "Login"
                                 }
                             },
                             {
                                 type: "reply",
                                 reply: {
-                                    id: "option_3",
-                                    title: "Opção 3"
+                                    id: "register",
+                                    title: "Registrar"
                                 }
                             }
                         ]
