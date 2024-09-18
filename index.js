@@ -74,7 +74,7 @@ app.post('/webhook', (req, res) => {
                         },
                         action: {
                             name: "flow",
-                            parametes: {
+                            parameters: {
                                 flow_message_version: "3",
                                 flow_token: "AQAAAAACS5FpgQ_cAAAAAD0QI3s.",
                                 flow_id: "1",
@@ -95,10 +95,15 @@ app.post('/webhook', (req, res) => {
                 headers: {
                     "Content-Type": "application/json"
                 }
-            })
-            res.sendStatus(200)
+            }).then(response => {
+                console.log('Message sent successfully:', response.data);
+                res.sendStatus(200);
+            }).catch(error => {
+                console.error('Error sending message:', error.response ? error.response.data : error.message);
+                res.sendStatus(500);
+            });
         } else {
-            res.sendStatus(404)
+            res.sendStatus(404);
         }
     }
 });
