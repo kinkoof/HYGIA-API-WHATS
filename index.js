@@ -59,41 +59,33 @@ app.post('/webhook', (req, res) => {
                     messaging_product: "whatsapp",
                     recipient_type: "individual",
                     to: from,
-                    type: "interactive",
-                    interactive: {
-                        type: "button",
-                        header: {
-                            type: "text",
-                            text: "Bem Vindo"
-                        },
-                        body: {
-                            text: "Bem vindo ao Hygia, como podemos te ajudar hoje?"
-                        },
-                        action: {
-                            buttons:[
-                                {
-                                    type: "reply",
-                                    reply:{
-                                        id: "buy",
-                                        title: "Comprar medicamentos"
-                                    }
-                                },
-                                {
-                                    type: "reply",
-                                    reply:{
-                                        id: "login",
-                                        title: "Entrar em sua conta"
-                                    }
-                                },
-                                {
-                                    type: "reply",
-                                    reply:{
-                                        id: "register",
-                                        title: "Se registrar"
-                                    }
+                    type: "flow",
+                    header: {
+                        type: "text",
+                        text: "Flow message header"
+                    },
+                    body: {
+                        text: "Flow message body"
+                    },
+                    footer: {
+                        text: "Flow message footer"
+                    },
+                    action: {
+                        name: "flow",
+                        parametes: {
+                            flow_message_version: "3",
+                            flow_token: "AQAAAAACS5FpgQ_cAAAAAD0QI3s.",
+                            flow_id: "1",
+                            flow_cta: "Book!",
+                            flow_action: "navigate",
+                            flow_action_payload: {
+                                screen: "<SCREEN_NAME>",
+                                data: {
+                                    product_name: "name",
+                                    product_description: "description",
+                                    product_price: 100
                                 }
-                            ]
-
+                            }
                         }
                     }
                 },
