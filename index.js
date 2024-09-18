@@ -29,87 +29,126 @@ app.get('/webhook', (req, res) => {
     }
 });
 
+const sendButtonsMessage = (phone_number_id, from) => {
+    axios({
+        method: "POST",
+        url: `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
+        data: {
+            messaging_product: "whatsapp",
+            to: from,
+            type: "interactive",
+            interactive: {
+                type: "button",
+                header: {
+                    type: "text",
+                    text: "Escolha uma opção"
+                },
+                body: {
+                    text: "Selecione uma das opções abaixo:"
+                },
+                action: {
+                    buttons: [
+                        {
+                            type: "reply",
+                            reply: {
+                                id: "option_1",
+                                title: "Opção 1"
+                            }
+                        },
+                        {
+                            type: "reply",
+                            reply: {
+                                id: "option_2",
+                                title: "Opção 2"
+                            }
+                        },
+                        {
+                            type: "reply",
+                            reply: {
+                                id: "option_3",
+                                title: "Opção 3"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        headers: {
+            "Content-Type": "application/json"
+        }
+    }).then(response => {
+        console.log('Botões enviados com sucesso:', response.data);
+    }).catch(error => {
+        console.error('Erro ao enviar botões:', error.response ? error.response.data : error.message);
+    });
+};
+
+// Send text message
+const sendTextMessage = (phone_number_id, from, message) => {
+    axios({
+        method: "POST",
+        url: `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
+        data: {
+            messaging_product: "whatsapp",
+            to: from,
+            type: "text",
+            text: {
+                body: message
+            }
+        },
+        headers: {
+            "Content-Type": "application/json"
+        }
+    }).then(response => {
+        console.log('Mensagem enviada com sucesso:', response.data);
+    }).catch(error => {
+        console.error('Erro ao enviar mensagem:', error.response ? error.response.data : error.message);
+    });
+};
+
 app.post('/webhook', (req, res) => {
     let body = req.body;
 
-    console.log(JSON.stringify(body, null, 2));
-
     if (body.object) {
-        console.log('Body object exists');
+        const phone_number_id = body.entry[0].changes[0].value.metadata.phone_number_id;
+        const from = body.entry[0].changes[0].value.messages[0].from;
 
         if (body.entry &&
             body.entry[0].changes &&
             body.entry[0].changes[0].value.messages &&
-            body.entry[0].changes[0].value.messages[0]
+            body.entry[0].changes[0].value.messages[0].text
         ) {
-            console.log('Message object detected');
+            const received_message = body.entry[0].changes[0].value.messages[0].text.body;
+            console.log('Mensagem recebida: ', received_message);
 
-            let phone_number_id = body.entry[0].changes[0].value.metadata.phone_number_id;
-            let from = body.entry[0].changes[0].value.messages[0].from;
-            let msg = body.entry[0].changes[0].value.messages[0].text.body;
-
-            console.log('phone number: ' + phone_number_id)
-            console.log('from: ' + from)
-            console.log('message: ' + msg)
-
-            axios({
-                method: "POST",
-                url: `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
-                data: {
-                    messaging_product: "whatsapp",
-                    recipient_type: "individual",
-                    to: from,
-                    type: "interactive",
-                    interactive: {
-                        type: "flow",
-                        header: {
-                            type: "text",
-                            text: "Flow message header"
-                        },
-                        body: {
-                            text: "Flow message body"
-                        },
-                        footer: {
-                            text: "Flow message footer"
-                        },
-                        action: {
-                            name: "flow",
-                            parameters: {
-                                flow_message_version: "3",
-                                flow_token: "AQAAAAACS5FpgQ_cAAAAAD0QI3s.",
-                                flow_id: "1",
-                                flow_cta: "Book!",
-                                flow_action: "navigate",
-                                flow_action_payload: {
-                                    screen: "<SCREEN_NAME>",
-                                    data: {
-                                        product_name: "name",
-                                        product_description: "description",
-                                        product_price: 100
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            }).then(response => {
-                console.log('Message sent successfully:', response.data);
-                res.sendStatus(200);
-            }).catch(error => {
-                console.error('Error sending message:', error.response ? error.response.data : error.message);
-                res.sendStatus(500);
-            });
-        } else {
-            res.sendStatus(404);
+            sendButtonsMessage(phone_number_id, from);
         }
+
+        if (body.entry &&
+            body.entry[0].changes &&
+            body.entry[0].changes[0].value.messages &&
+            body.entry[0].changes[0].value.messages[0].interactive
+        ) {
+            const button_reply = body.entry[0].changes[0].value.messages[0].interactive.button_reply;
+            const selected_option = button_reply.id;
+
+            console.log('Opção selecionada: ', selected_option);
+
+            if (selected_option === 'option_1') {
+                sendTextMessage(phone_number_id, from, "Você escolheu a Opção 1!");
+            } else if (selected_option === 'option_2') {
+                sendTextMessage(phone_number_id, from, "Você escolheu a Opção 2!");
+            } else if (selected_option === 'option_3') {
+                sendTextMessage(phone_number_id, from, "Você escolheu a Opção 3!");
+            }
+        }
+
+        res.sendStatus(200);
+    } else {
+        res.sendStatus(404);
     }
 });
 
 app.get('/', (req, res) => {
-    res.status(200).send('Hello, word! my name is Hygia')
-})
-
-
+    res.status(200).send('Hello, world! My name is Hygia.');
+});
