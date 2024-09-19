@@ -1,19 +1,16 @@
+// src/app.js
 const express = require('express');
 const bodyParser = require('body-parser');
-const app = express();
 require('dotenv').config();
 
-// Import routes
-const webhookRoutes = require('./routes/webhookRoutes');
+const { handleWebhook } = require('./controllers/webhookController');
 
-// Middleware
+const app = express();
 app.use(bodyParser.json());
 
-// Routes
-app.use('/webhook', webhookRoutes);
+app.post('/webhook', handleWebhook);
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Servidor rodando na porta ${PORT}`);
 });

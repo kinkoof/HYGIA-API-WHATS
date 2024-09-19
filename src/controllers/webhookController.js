@@ -1,4 +1,9 @@
-const { sendButtonsMessage, sendTextMessage } = require('../services/whatsappService');
+// src/controllers/webhookController.js
+const { handleRegistration } = require('../services/registrationService');
+const { sendTextMessage } = require('../utils/messageSender');
+
+// Variável para armazenar o estado de registro dos usuários
+const userRegistrationState = {};
 
 const handleWebhook = (req, res) => {
     let body = req.body;
@@ -7,25 +12,25 @@ const handleWebhook = (req, res) => {
         const phone_number_id = body.entry[0].changes[0].value.metadata.phone_number_id;
         const from = body.entry[0].changes[0].value.messages[0].from;
 
-        if (body.entry[0].changes[0].value.messages[0].text) {
-            const received_message = body.entry[0].changes[0].value.messages[0].text.body;
-            console.log('Mensagem recebida: ', received_message);
-
-            sendButtonsMessage(phone_number_id, from);
-        }
-
+        // Verifica se a mensagem contém uma resposta interativa (botões)
         if (body.entry[0].changes[0].value.messages[0].interactive) {
             const button_reply = body.entry[0].changes[0].value.messages[0].interactive.button_reply;
             const selected_option = button_reply.id;
 
-            console.log('Opção selecionada: ', selected_option);
+            if (selected_option === 'register') {
+                // Iniciar o processo de registro de usuário
+                userRegistrationState[from] = { step: 'start' };
+                handleRegistration(phone_number_id, from, null, userRegistrationState); // Passar o estado como parâmetro
+            }
+        }
 
-            if (selected_option === 'option_1') {
-                sendTextMessage(phone_number_id, from, "Você escolheu a Opção 1!");
-            } else if (selected_option === 'option_2') {
-                sendTextMessage(phone_number_id, from, "Você escolheu a Opção 2!");
-            } else if (selected_option === 'option_3') {
-                sendTextMessage(phone_number_id, from, "Você escolheu a Opção 3!");
+        // Verifica se a mensagem contém um texto
+        if (body.entry[0].changes[0].value.messages[0].text) {
+            const received_message = body.entry[0].changes[0].value.messages[0].text.body;
+
+            // Verifica se o usuário já iniciou o processo de registro
+            if (userRegistrationState[from]) {
+                handleRegistration(phone_number_id, from, received_message, userRegistrationState); // Continuar o registro
             }
         }
 
@@ -35,6 +40,4 @@ const handleWebhook = (req, res) => {
     }
 };
 
-module.exports = {
-    handleWebhook
-};
+module.exports = { handleWebhook };
