@@ -1,7 +1,6 @@
 const { sendTextMessage } = require('../utils/messageSender');
 const { validateEmail, hashPassword } = require('../utils/validators');
-
-let userRegistrationState = {};
+const { userRegistrationState } = require('../state');
 
 const handleRegistration = async (phone_number_id, from, received_message) => {
     const userState = userRegistrationState[from] || { step: 'start' };
@@ -28,13 +27,8 @@ const handleRegistration = async (phone_number_id, from, received_message) => {
 
         await saveUserToDatabase(newUser);
         await sendTextMessage(phone_number_id, from, "Registro completo! Bem-vindo à plataforma.");
-        delete userRegistrationState[from];
+        delete userRegistrationState[from]; // Limpar o estado após o registro
     }
-};
-
-const saveUserToDatabase = async (user) => {
-    // Função para salvar o usuário no banco de dados (exemplo fictício)
-    console.log("Usuário salvo no banco:", user);
 };
 
 module.exports = { handleRegistration };

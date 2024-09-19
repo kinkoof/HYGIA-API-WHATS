@@ -1,4 +1,5 @@
 const { handleRegistration } = require('../services/registrationService');
+const { userRegistrationState } = require('../state');
 
 const handleWebhook = (req, res) => {
     let body = req.body;
