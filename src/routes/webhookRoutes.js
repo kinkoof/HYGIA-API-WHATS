@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const webhookController = require('../controllers/webhookController');
 
+// GET Webhook - Verificação
 router.get('/', (req, res) => {
     let mode = req.query['hub.mode'];
     let token = req.query['hub.verify_token'];
@@ -18,6 +19,7 @@ router.get('/', (req, res) => {
     }
 });
 
+// POST Webhook - Recebimento de mensagens
 router.post('/', webhookController.handleWebhook);
 
 module.exports = router;
