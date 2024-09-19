@@ -1,37 +1,90 @@
-const { sendInteractiveMessage } = require('../services/whatsappService');
-const { VERIFY_TOKEN } = require('../config/envConfig');
+const axios = require('../utils/axiosInstance');
+const { VERIFY_TOKEN, ACCESS_TOKEN } = require('../config/config');
 
 exports.verifyWebhook = (req, res) => {
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
+    let mode = req.query['hub.mode'];
+    let token = req.query['hub.verify_token'];
+    let challenge = req.query['hub.challenge'];
 
     if (mode && token) {
         if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-            return res.status(200).send(challenge);
+            res.status(200).send(challenge);
         } else {
-            return res.status(403).send('Forbidden');
+            res.status(403).send('Forbidden');
         }
+    } else {
+        res.status(400).send('Bad Request');
     }
-    res.status(400).send('Bad Request');
 };
 
-exports.handleWebhook = (req, res) => {
-    const body = req.body;
+exports.handleMessage = (req, res) => {
+    let body = req.body;
+    console.log(JSON.stringify(body, null, 2));
 
     if (body.object) {
-        const changes = body.entry?.[0]?.changes?.[0]?.value;
-        const messages = changes?.messages?.[0];
+        console.log('Body object exists');
 
-        if (messages) {
-            const phoneNumberId = changes.metadata.phone_number_id;
-            const from = messages.from;
-            const msgBody = messages.text.body;
+        if (
+            body.entry &&
+            body.entry[0].changes &&
+            body.entry[0].changes[0].value.messages &&
+            body.entry[0].changes[0].value.messages[0]
+        ) {
+            console.log('Message object detected');
 
-            sendInteractiveMessage(phoneNumberId, from);
+            let phone_number_id = body.entry[0].changes[0].value.metadata.phone_number_id;
+            let from = body.entry[0].changes[0].value.messages[0].from;
+            let msg = body.entry[0].changes[0].value.messages[0].text.body;
 
-            return res.sendStatus(200);
+            console.log('phone number: ' + phone_number_id);
+            console.log('from: ' + from);
+            console.log('message: ' + msg);
+
+            axios.post(`/v19.0/${phone_number_id}/messages`, {
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                to: from,
+                type: 'interactive',
+                interactive: {
+                    type: 'button',
+                    header: {
+                        type: 'text',
+                        text: 'Bem Vindo',
+                    },
+                    body: {
+                        text: 'Bem vindo ao Hygia, como podemos te ajudar hoje?',
+                    },
+                    action: {
+                        buttons: [
+                            {
+                                type: 'reply',
+                                reply: {
+                                    id: 'buy',
+                                    title: 'Comprar medicamentos',
+                                },
+                            },
+                            {
+                                type: 'reply',
+                                reply: {
+                                    id: 'login',
+                                    title: 'Entrar em sua conta',
+                                },
+                            },
+                            {
+                                type: 'reply',
+                                reply: {
+                                    id: 'register',
+                                    title: 'Se registrar',
+                                },
+                            },
+                        ],
+                    },
+                },
+            });
+
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(404);
         }
     }
-    res.sendStatus(404);
 };
