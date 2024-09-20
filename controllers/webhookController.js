@@ -1,4 +1,4 @@
-const { sendMessage } = require('../services/whatsappService');
+const { sendMessage, sendRegisterFlow } = require('../services/whatsappService');
 
 // Valida o token e retorna o desafio
 exports.verifyWebhook = (req, res) => {
@@ -20,7 +20,6 @@ exports.verifyWebhook = (req, res) => {
     }
 };
 
-// Processa a mensagem recebida e envia a resposta
 exports.handleMessage = (req, res) => {
     const body = req.body;
 
@@ -28,13 +27,43 @@ exports.handleMessage = (req, res) => {
         const entry = body.entry?.[0]?.changes?.[0]?.value;
 
         if (entry?.messages?.[0]) {
+            const messageObject = entry.messages[0];
             const phone_number_id = entry.metadata.phone_number_id;
-            const from = entry.messages[0].from;
-            const message = entry.messages[0].text.body;
+            const from = messageObject.from;
 
-            console.log(`From: ${from}, Message: ${message}`);
+            // Verifica se a mensagem é uma resposta a um botão interativo
+            if (messageObject.button) {
+                const buttonResponse = messageObject.button.reply.id;
 
-            sendMessage(phone_number_id, from, res);
+                switch (buttonResponse) {
+                    case 'register':
+                        // Inicia o fluxo de registro
+                        sendRegisterFlow(phone_number_id, from, res);
+                        break;
+
+                    default:
+                        res.sendStatus(200);
+                        break;
+                }
+            } else if (messageObject.text && ongoingFlow[from]) {
+                // Verifica se o fluxo de registro está em andamento
+                const currentStep = ongoingFlow[from].step;
+
+                switch (currentStep) {
+                    case 'name':
+                        // Salva o nome do usuário e passa para o próximo passo (ex: email)
+                        saveName(from, messageObject.text.body);
+                        sendNextStep(phone_number_id, from, 'email', res);
+                        break;
+
+                    // Outros casos para capturar email, telefone, etc.
+                    default:
+                        res.sendStatus(200);
+                        break;
+                }
+            } else {
+                res.sendStatus(200);
+            }
         } else {
             console.log('No message object found');
             res.sendStatus(404);
@@ -44,3 +73,4 @@ exports.handleMessage = (req, res) => {
         res.sendStatus(404);
     }
 };
+
