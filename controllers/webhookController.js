@@ -31,32 +31,43 @@ exports.handleMessage = (req, res) => {
             const phone_number_id = entry.metadata.phone_number_id;
             const from = messageObject.from;
 
-            // Verifica se a mensagem é uma resposta a um botão interativo
             if (messageObject.button) {
                 const buttonResponse = messageObject.button.reply.id;
 
-                switch (buttonResponse) {
-                    case 'register':
-                        // Inicia o fluxo de registro
-                        sendRegisterFlow(phone_number_id, from, res);
-                        break;
-
-                    default:
-                        res.sendStatus(200);
-                        break;
+                if (buttonResponse === 'register') {
+                    // Inicia o fluxo de registro
+                    startRegisterFlow(phone_number_id, from, res);
+                } else {
+                    res.sendStatus(200);
                 }
-            } else if (messageObject.text && ongoingFlow[from]) {
-                // Verifica se o fluxo de registro está em andamento
-                const currentStep = ongoingFlow[from].step;
+            } else if (messageObject.text && userFlows[from]) {
+                const currentStep = userFlows[from].step;
+                const userText = messageObject.text.body;
 
                 switch (currentStep) {
                     case 'name':
-                        // Salva o nome do usuário e passa para o próximo passo (ex: email)
-                        saveName(from, messageObject.text.body);
-                        sendNextStep(phone_number_id, from, 'email', res);
+                        // Armazena o nome e avança para o email
+                        userFlows[from].data.name = userText;
+                        userFlows[from].step = 'email';
+                        askNextStep(phone_number_id, from, res);
                         break;
 
-                    // Outros casos para capturar email, telefone, etc.
+                    case 'email':
+                        // Armazena o email e avança para a confirmação
+                        userFlows[from].data.email = userText;
+                        askNextStep(phone_number_id, from, res);
+                        break;
+
+                    case 'final':
+                        // Confirmar os dados e salvar
+                        if (userText.toLowerCase() === 'sim') {
+                            saveUserToDatabase(from, userFlows[from].data);
+                            res.sendStatus(200);
+                        } else {
+                            res.sendStatus(400); // Ou peça para repetir a confirmação
+                        }
+                        break;
+
                     default:
                         res.sendStatus(200);
                         break;
@@ -65,11 +76,9 @@ exports.handleMessage = (req, res) => {
                 res.sendStatus(200);
             }
         } else {
-            console.log('No message object found');
             res.sendStatus(404);
         }
     } else {
-        console.log('Invalid body object');
         res.sendStatus(404);
     }
 };
