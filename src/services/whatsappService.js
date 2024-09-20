@@ -25,22 +25,22 @@ const sendButtonsMessage = async (phone_number_id, from) => {
                             {
                                 type: "reply",
                                 reply: {
-                                    id: "option_1",
-                                    title: "Opção 1"
+                                    id: "buy",
+                                    title: "Comprar Remédio"
                                 }
                             },
                             {
                                 type: "reply",
                                 reply: {
-                                    id: "option_2",
-                                    title: "Opção 2"
+                                    id: "register",
+                                    title: "Se registrar"
                                 }
                             },
                             {
                                 type: "reply",
                                 reply: {
-                                    id: "option_3",
-                                    title: "Opção 3"
+                                    id: "login",
+                                    title: "Login"
                                 }
                             }
                         ]

@@ -1,13 +1,19 @@
-// src/utils/validators.js
 const bcrypt = require('bcrypt');
 
-const validateEmail = (email) => {
-    const re = /\S+@\S+\.\S+/;
-    return re.test(email);
+// Valida se a senha contém pelo menos uma letra maiúscula e tem no mínimo 8 caracteres
+const validatePassword = (password) => {
+    const regex = /^(?=.*[A-Z]).{8,}$/;
+    return regex.test(password);
 };
 
+// Gera um hash da senha para armazenamento seguro
 const hashPassword = (password) => {
     return bcrypt.hashSync(password, 10);
 };
 
-module.exports = { validateEmail, hashPassword };
+// Verifica se duas senhas são iguais
+const confirmPassword = (password, confirmPassword) => {
+    return password === confirmPassword;
+};
+
+module.exports = { validatePassword, hashPassword, confirmPassword };

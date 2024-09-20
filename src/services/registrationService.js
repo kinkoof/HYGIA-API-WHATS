@@ -1,40 +1,49 @@
-const { sendTextMessage } = require('../utils/messageSender');
-const { validateEmail, hashPassword } = require('../utils/validators');
+const { sendTextMessage, sendButtonsMessage  } = require('../utils/messageSender');
+const { validatePassword, hashPassword } = require('../utils/validators');
 
 let userRegistrationState = {};
 
+const handleFirstMessage = async (phone_number_id, from) => {
+    await sendButtonsMessage(phone_number_id, from);
+    userRegistrationState[from] = { step: 'awaiting_choice' };
+};
+
 const handleRegistration = async (phone_number_id, from, received_message) => {
-    const userState = userRegistrationState[from] || { step: 'start' };
+    const userState = userRegistrationState[from] || { step: 'initial' };
 
-    if (userState.step === 'start') {
-        await sendTextMessage(phone_number_id, from, "Por favor, me informe seu endereço de email.");
-        userRegistrationState[from] = { step: 'awaiting_email' };
-    } else if (userState.step === 'awaiting_email') {
-        if (validateEmail(received_message)) {
-            userRegistrationState[from] = { step: 'awaiting_name', email: received_message };
-            await sendTextMessage(phone_number_id, from, "Email recebido! Agora, informe seu nome completo.");
+    if (userState.step === 'awaiting_choice') {
+        const message_id = received_message.button_reply.id;
+
+        if (message_id === 'register') {
+            await sendTextMessage(phone_number_id, from, "Por favor, defina uma senha (deve conter no mínimo 8 caracteres e uma letra maiúscula).");
+            userRegistrationState[from] = { step: 'awaiting_password' };
+        } else if (message_id === 'buy') {
+            await sendTextMessage(phone_number_id, from, "Você escolheu Comprar Remédio. Estamos processando seu pedido.");
+            delete userRegistrationState[from];
+        } else if (message_id === 'login') {
+            await sendTextMessage(phone_number_id, from, "Você escolheu Login. Por favor, insira suas credenciais.");
+            delete userRegistrationState[from];
         } else {
-            await sendTextMessage(phone_number_id, from, "Por favor, insira um email válido.");
+            await sendTextMessage(phone_number_id, from, "Escolha inválida. Por favor, selecione uma das opções.");
+            await sendButtonsMessage(phone_number_id, from);
         }
-    } else if (userState.step === 'awaiting_name') {
-        userRegistrationState[from] = { step: 'awaiting_password', name: received_message };
-        await sendTextMessage(phone_number_id, from, "Nome recebido! Agora, crie uma senha.");
     } else if (userState.step === 'awaiting_password') {
-        const newUser = {
-            email: userState.email,
-            name: userState.name,
-            password: hashPassword(received_message)
-        };
+        // Fluxo de registro continua aqui
+    }
+};
 
-        await saveUserToDatabase(newUser);
-        await sendTextMessage(phone_number_id, from, "Registro completo! Bem-vindo à plataforma.");
-        delete userRegistrationState[from];
+const handleUserInteraction = async (phone_number_id, from, received_message) => {
+    const userState = userRegistrationState[from] || { step: 'initial' };
+
+    if (userState.step === 'initial') {
+        await handleFirstMessage(phone_number_id, from);
+    } else {
+        await handleRegistration(phone_number_id, from, received_message);
     }
 };
 
 const saveUserToDatabase = async (user) => {
-    // Função para salvar o usuário no banco de dados (exemplo fictício)
     console.log("Usuário salvo no banco:", user);
 };
 
-module.exports = { handleRegistration };
+module.exports = { handleUserInteraction };
