@@ -1,44 +1,31 @@
 const axios = require('axios');
+const bcrypt = require('bcryptjs');
 const { ACCESS_TOKEN } = require('../config/config');
 const userFlows = require('../state/userFlows');
 
+const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
 // Função reutilizável para enviar mensagens
-const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, location = null) => {
-    let messageData = {
+const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null) => {
+    const messageData = {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
         to,
-    };
-
-    if (buttons) {
-        messageData = {
-            ...messageData,
-            type: 'interactive',
+        type: buttons ? 'interactive' : 'text',
+        ...(buttons ? {
             interactive: {
                 type: 'button',
                 header: { type: 'text', text: 'Bem Vindo' },
                 body: { text },
                 action: { buttons: buttons.map(button => ({ type: 'reply', reply: button })) }
             }
-        };
-    } else if (location) {
-        messageData = {
-            ...messageData,
-            type: 'location',
-            location: {
-                latitude: location.latitude,
-                longitude: location.longitude,
-                name: location.name,
-                address: location.address
-            }
-        };
-    } else {
-        messageData = {
-            ...messageData,
-            type: 'text',
+        } : {
             text: { body: text }
-        };
-    }
+        })
+    };
 
     axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
         .then(() => res.sendStatus(200))
@@ -62,40 +49,35 @@ const handleRegistrationStep = (phone_number_id, from, userText, res) => {
 
     switch (currentStep) {
         case 'password':
-            userFlows[from].data.password = userText;
+            // Hash the password
+            const hashedPassword = bcrypt.hashSync(userText, 10);
+            userFlows[from].data.password = hashedPassword;
             userFlows[from].step = 'confirmPassword';
             sendWhatsAppMessage(phone_number_id, from, 'Por favor, confirme sua senha:', res);
             break;
 
         case 'confirmPassword':
-            if (userText === userFlows[from].data.password) {
-                userFlows[from].step = 'email'; // Avança para o passo do e-mail
+            // Compare the password hash with the input
+            const isPasswordMatch = bcrypt.compareSync(userText, userFlows[from].data.password);
+            if (isPasswordMatch) {
+                userFlows[from].step = 'email';
                 sendWhatsAppMessage(phone_number_id, from, 'Agora, por favor, informe seu e-mail:', res);
             } else {
                 userFlows[from].step = 'password';
-                sendWhatsAppMessage(phone_number_id, from, 'As senhas não coincidem. Vamos começar de novo. Por favor defina a', res);
+                sendWhatsAppMessage(phone_number_id, from, 'As senhas não coincidem. Vamos começar de novo.', res);
             }
             break;
 
         case 'email':
-            userFlows[from].data.email = userText; // Armazena o e-mail do usuário
-            userFlows[from].step = 'location'; // Avança para o passo de localização
-            sendWhatsAppMessage(phone_number_id, from, 'Por favor, compartilhe sua localização:', res);
-            break;
-
-        case 'location':
-            // Aqui você pode salvar a localização enviada (neste exemplo, estamos simulando a localização)
-            const location = {
-                latitude: '-23.550520', // Exemplo de latitude (São Paulo)
-                longitude: '-46.633308', // Exemplo de longitude
-                name: 'São Paulo',
-                address: 'São Paulo, SP, Brasil'
-            };
-            userFlows[from].data.location = location; // Salva a localização do usuário
-            const { phoneNumber, password, email } = userFlows[from].data; // Pega os dados
-            saveUserToDatabase(from, { phoneNumber, password, email, location });
-            sendWhatsAppMessage(phone_number_id, from, `Parabéns! Seu registro foi concluído com sucesso.`, res);
-            delete userFlows[from];
+            if (validateEmail(userText)) {
+                userFlows[from].data.email = userText;
+                const { phoneNumber, password, email } = userFlows[from].data;
+                saveUserToDatabase(from, { phoneNumber, password, email });
+                sendWhatsAppMessage(phone_number_id, from, 'Parabéns! Seu registro foi concluído com sucesso.', res);
+                delete userFlows[from];
+            } else {
+                sendWhatsAppMessage(phone_number_id, from, 'O e-mail fornecido não é válido. Por favor, tente novamente.', res);
+            }
             break;
     }
 };
