@@ -49,6 +49,24 @@ exports.handleMessage = (req, res) => {
         } else {
             handleRegistrationStep(phone_number_id, from, userText, res);
         }
+    } else if (messageObject.type === 'location') {
+        const locationData = messageObject.location;
+        const location = {
+            address: locationData.address,
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+            name: locationData.name
+        };
+
+        if (userFlows[from]) {
+            userFlows[from].data.location = location; // Salva a localização no fluxo do usuário
+            const { phoneNumber, password, email } = userFlows[from].data;
+            saveUserToDatabase(from, { phoneNumber, password, email, location }); // Salva no banco de dados
+            sendWhatsAppMessage(phone_number_id, from, 'Obrigado por compartilhar sua localização! Seu registro foi concluído com sucesso.', res);
+            delete userFlows[from];
+        } else {
+            sendWhatsAppMessage(phone_number_id, from, 'Localização recebida, mas não estou em um fluxo de registro.', res);
+        }
     } else {
         res.sendStatus(200);
     }

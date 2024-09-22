@@ -103,7 +103,6 @@ const handleRegistrationStep = (phone_number_id, from, userText, res) => {
             break;
 
         case 'location':
-            // Aqui você pode salvar a localização se receber um evento de localização
             userFlows[from].data.location = userText; // Aqui, a localização deve ser capturada no evento
             const { phoneNumber, password, email, location } = userFlows[from].data;
             saveUserToDatabase(from, { phoneNumber, password, email, location });
@@ -116,7 +115,6 @@ const handleRegistrationStep = (phone_number_id, from, userText, res) => {
 // Função para salvar o usuário no banco de dados
 const saveUserToDatabase = (from, userData) => {
     console.log('Salvando no banco de dados:', { from, ...userData });
-    // Aqui você incluiria a lógica para salvar no banco, como uma inserção no MongoDB, MySQL, etc.
 };
 
 module.exports = { sendWhatsAppMessage, startRegisterFlow, handleRegistrationStep, saveUserToDatabase };
