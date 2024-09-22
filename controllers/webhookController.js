@@ -42,6 +42,7 @@ exports.handleMessage = (req, res) => {
                     console.log("registrar")
                     startRegisterFlow(phone_number_id, from, res);
                 } else {
+                    console.log("nada")
                     res.sendStatus(200);
                 }
             }
