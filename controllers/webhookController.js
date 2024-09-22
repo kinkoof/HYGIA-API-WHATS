@@ -1,4 +1,4 @@
-const { sendMessage, sendRegisterFlow } = require('../services/whatsappService');
+const { startRegisterFlow, sendMessage, askNextStep, saveUserToDatabase } = require('../services/whatsappService');
 
 const userFlows = {};
 
