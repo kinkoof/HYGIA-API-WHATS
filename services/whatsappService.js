@@ -31,7 +31,7 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null) => 
 
 // Inicia o fluxo de registro
 const startRegisterFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { step: 'password', data: {} };
+    userFlows[from] = { step: 'password', data: { phoneNumber: from } }; // Armazena o número do usuário
     sendWhatsAppMessage(phone_number_id, from, 'Para começar seu registro, defina uma Senha:', res);
 };
 
@@ -50,19 +50,28 @@ const handleRegistrationStep = (phone_number_id, from, userText, res) => {
 
         case 'confirmPassword':
             if (userText === userFlows[from].data.password) {
-                saveUserToDatabase(from, { password: userFlows[from].data.password });
-                sendWhatsAppMessage(phone_number_id, from, `Parabéns! Seu registro foi concluído com sucesso.`, res);
-                delete userFlows[from];
+                userFlows[from].step = 'email'; // Avança para o passo do e-mail
+                sendWhatsAppMessage(phone_number_id, from, 'Agora, por favor, informe seu e-mail:', res);
             } else {
                 userFlows[from].step = 'password';
                 sendWhatsAppMessage(phone_number_id, from, 'As senhas não coincidem. Tente novamente.', res);
             }
             break;
+
+        case 'email':
+            userFlows[from].data.email = userText; // Armazena o e-mail do usuário
+            const { phoneNumber, password, email } = userFlows[from].data; // Pega os dados
+            saveUserToDatabase(from, { phoneNumber, password, email });
+            sendWhatsAppMessage(phone_number_id, from, `Parabéns! Seu registro foi concluído com sucesso.`, res);
+            delete userFlows[from];
+            break;
     }
 };
 
+// Função para salvar o usuário no banco de dados
 const saveUserToDatabase = (from, userData) => {
-    console.log('Salvando no banco de dados:', userData);
+    console.log('Salvando no banco de dados:', { from, ...userData });
+    // Aqui você incluiria a lógica para salvar no banco, como uma inserção no MongoDB, MySQL, etc.
 };
 
 module.exports = { sendWhatsAppMessage, startRegisterFlow, handleRegistrationStep, saveUserToDatabase };
