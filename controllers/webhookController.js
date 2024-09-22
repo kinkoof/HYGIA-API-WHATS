@@ -33,13 +33,13 @@ exports.handleMessage = (req, res) => {
             const phone_number_id = entry.metadata.phone_number_id;
             const from = messageObject.from;
 
-            console.log('Mensagem recebida:', messageObject); // Log para ver todo o conteúdo da mensagem
+            console.log('Mensagem recebida:', messageObject); // Log para depuração
 
             // Caso o usuário interaja com botões
-            if (messageObject.button) {
-                const buttonResponse = messageObject.button.reply.id;
+            if (messageObject.interactive && messageObject.interactive.type === 'button_reply') {
+                const buttonResponse = messageObject.interactive.button_reply.id;
 
-                console.log('Botão selecionado:', buttonResponse); // Log para ver o ID do botão
+                console.log('Botão selecionado:', buttonResponse); // Log do ID do botão
 
                 if (buttonResponse === 'register') {
                     // Inicia o fluxo de registro
@@ -95,4 +95,5 @@ exports.handleMessage = (req, res) => {
         res.sendStatus(404);
     }
 };
+
 
