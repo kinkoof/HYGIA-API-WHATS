@@ -1,6 +1,6 @@
 const { sendWhatsAppMessage, startRegisterFlow, handleRegistrationStep, saveUserToDatabase } = require('../services/whatsappService');
 const userFlows = require('../state/userFlows');
-
+// teste
 // Valida o token e retorna o desafio
 exports.verifyWebhook = (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
