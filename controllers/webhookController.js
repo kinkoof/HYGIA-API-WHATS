@@ -1,4 +1,4 @@
-const { startRegisterFlow, sendMessage, askNextStep, saveUserToDatabase } = require('../services/whatsappService');
+const { sendMessage, startRegisterFlow, askNextStep, saveUserToDatabase } = require('../services/whatsappService');
 
 const userFlows = {};
 
@@ -33,6 +33,7 @@ exports.handleMessage = (req, res) => {
             const phone_number_id = entry.metadata.phone_number_id;
             const from = messageObject.from;
 
+            // Caso o usuário interaja com botões
             if (messageObject.button) {
                 const buttonResponse = messageObject.button.reply.id;
 
@@ -42,7 +43,13 @@ exports.handleMessage = (req, res) => {
                 } else {
                     res.sendStatus(200);
                 }
-            } else if (messageObject.text && userFlows[from]) {
+            }
+            else if (messageObject.text && !userFlows[from]) {
+                // Envia mensagem de boas-vindas com os botões interativos
+                sendMessage(phone_number_id, from, res);
+            }
+            // Caso o usuário já esteja no fluxo de registro
+            else if (messageObject.text && userFlows[from]) {
                 const currentStep = userFlows[from].step;
                 const userText = messageObject.text.body;
 
@@ -66,7 +73,7 @@ exports.handleMessage = (req, res) => {
                             saveUserToDatabase(from, userFlows[from].data);
                             res.sendStatus(200);
                         } else {
-                            res.sendStatus(400); // Ou peça para repetir a confirmação
+                            res.sendStatus(400);
                         }
                         break;
 
@@ -84,4 +91,3 @@ exports.handleMessage = (req, res) => {
         res.sendStatus(404);
     }
 };
-
