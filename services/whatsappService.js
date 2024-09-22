@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { ACCESS_TOKEN } = require('../config/config');
 
-const userFlows = {};
+const userFlows = require('../state/userFlows');
 
 // Envia a mensagem de boas-vindas com botões interativos
 exports.sendMessage = (phone_number_id, from, res) => {
@@ -62,7 +62,6 @@ exports.sendMessage = (phone_number_id, from, res) => {
         });
 };
 
-// Inicia o fluxo de registro
 // Inicia o fluxo de registro
 exports.startRegisterFlow = (phone_number_id, from, res) => {
     userFlows[from] = { step: 'password', data: {} };
