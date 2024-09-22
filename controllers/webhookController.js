@@ -41,40 +41,45 @@ exports.handleMessage = (req, res) => {
                 } else {
                     res.sendStatus(200);
                 }
-            } else if (messageObject.text && !userFlows[from]) {
-                // Envia mensagem de boas-vindas com os botões interativos
-                sendMessage(phone_number_id, from, res);
-            }
-            // Caso o usuário já esteja no fluxo de registro
-            else if (messageObject.text && userFlows[from]) {
-                const currentStep = userFlows[from].step;
-                const userText = messageObject.text.body;
+            } else if (messageObject.text) {
+                // Se o usuário não estiver em um fluxo, inicia o fluxo de boas-vindas
+                if (!userFlows[from]) {
+                    sendMessage(phone_number_id, from, res);
+                } else {
+                    // Caso o usuário já esteja no fluxo de registro
+                    const currentStep = userFlows[from].step;
+                    const userText = messageObject.text.body;
 
-                switch (currentStep) {
-                    case 'password':
-                        // Armazena a senha e avança para a confirmação
-                        userFlows[from].data.password = userText;
-                        userFlows[from].step = 'confirmPassword';
-                        askNextStep(phone_number_id, from, res); // Solicita confirmação da senha
-                        break;
+                    switch (currentStep) {
+                        case 'password':
+                            // Armazena a senha e avança para a confirmação
+                            userFlows[from].data.password = userText;
+                            userFlows[from].step = 'confirmPassword';
+                            askNextStep(phone_number_id, from, res); // Solicita confirmação da senha
+                            break;
 
-                    case 'confirmPassword':
-                        // Verifica se a confirmação da senha corresponde
-                        if (userText === userFlows[from].data.password) {
-                            // Senha confirmada
-                            saveUserToDatabase(from, { password: userFlows[from].data.password });
+                        case 'confirmPassword':
+                            // Verifica se a confirmação da senha corresponde
+                            if (userText === userFlows[from].data.password) {
+                                // Senha confirmada
+                                saveUserToDatabase(from, { password: userFlows[from].data.password });
+                                res.send({
+                                    status: 200,
+                                    body: 'Registro completo!'
+                                });
+                                delete userFlows[from]; // Limpa o fluxo após registro
+                            } else {
+                                res.send({
+                                    status: 400,
+                                    body: 'As senhas não coincidem. Por favor, tente novamente.'
+                                });
+                            }
+                            break;
+
+                        default:
                             res.sendStatus(200);
-                        } else {
-                            res.send({
-                                status: 400,
-                                body: 'As senhas não coincidem. Por favor, tente novamente.'
-                            });
-                        }
-                        break;
-
-                    default:
-                        res.sendStatus(200);
-                        break;
+                            break;
+                    }
                 }
             } else {
                 res.sendStatus(200);

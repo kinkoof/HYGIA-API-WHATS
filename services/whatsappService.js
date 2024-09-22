@@ -53,13 +53,13 @@ exports.sendMessage = (phone_number_id, from, res) => {
             },
         },
     })
-        .then(() => {
-            res.sendStatus(200);
-        })
-        .catch((error) => {
-            console.error('Error sending message:', error);
-            res.sendStatus(500);
-        });
+    .then(() => {
+        res.sendStatus(200);
+    })
+    .catch((error) => {
+        console.error('Error sending message:', error);
+        res.sendStatus(500);
+    });
 };
 
 // Inicia o fluxo de registro
@@ -82,16 +82,17 @@ exports.startRegisterFlow = (phone_number_id, from, res) => {
             },
         },
     })
-        .then(() => {
-            res.sendStatus(200);
-        })
-        .catch((error) => {
-            console.error('Error sending message:', error);
-            res.sendStatus(500);
-        });
+    .then(() => {
+        res.sendStatus(200);
+    })
+    .catch((error) => {
+        console.error('Error sending message:', error);
+        res.sendStatus(500);
+    });
 };
 
-exports.askNextStep = (phone_number_id, from, res) => {
+// Solicita o próximo passo no fluxo de registro
+exports.askNextStep = (phone_number_id, from, userText, res) => {
     const currentStep = userFlows[from]?.step;
     let message = '';
 
@@ -102,8 +103,8 @@ exports.askNextStep = (phone_number_id, from, res) => {
             userFlows[from].step = 'confirmPassword';
             message = 'Por favor, confirme sua senha:'; // Solicita confirmação da senha
             break;
+
         case 'confirmPassword':
-            // Verifica se a confirmação da senha corresponde
             // Verifica se a confirmação da senha corresponde
             if (userText === userFlows[from].data.password) {
                 // Senha confirmada
@@ -115,6 +116,7 @@ exports.askNextStep = (phone_number_id, from, res) => {
                 userFlows[from].step = 'password'; // Retorna para a senha
             }
             break;
+
         default:
             message = 'Não entendi, por favor, tente novamente.';
     }
@@ -135,13 +137,13 @@ exports.askNextStep = (phone_number_id, from, res) => {
             },
         },
     })
-        .then(() => {
-            res.sendStatus(200);
-        })
-        .catch((error) => {
-            console.error('Error sending message:', error);
-            res.sendStatus(500);
-        });
+    .then(() => {
+        res.sendStatus(200);
+    })
+    .catch((error) => {
+        console.error('Error sending message:', error);
+        res.sendStatus(500);
+    });
 };
 
 exports.saveUserToDatabase = (from, userData) => {
