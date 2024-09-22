@@ -145,29 +145,6 @@ exports.askNextStep = (phone_number_id, from, res) => {
     });
 };
 
-// Modifique a parte onde você armazena a senha
-else if (messageObject.text && userFlows[from]) {
-    const currentStep = userFlows[from].step;
-    const userText = messageObject.text.body;
-
-    switch (currentStep) {
-        case 'password':
-            // Armazena a senha e avança para a confirmação
-            userFlows[from].data.password = userText;
-            askNextStep(phone_number_id, from, res);
-            break;
-
-        case 'confirmPassword':
-            // A lógica para confirmar a senha deve estar aqui
-            askNextStep(phone_number_id, from, res);
-            break;
-
-        default:
-            res.sendStatus(200);
-            break;
-    }
-}
-
 exports.saveUserToDatabase = (from, userData) => {
     console.log('Salvando no banco de dados:', userData);
 };

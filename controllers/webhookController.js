@@ -42,8 +42,7 @@ exports.handleMessage = (req, res) => {
                 } else {
                     res.sendStatus(200);
                 }
-            }
-            else if (messageObject.text && !userFlows[from]) {
+            } else if (messageObject.text && !userFlows[from]) {
                 // Envia mensagem de boas-vindas com os botões interativos
                 sendMessage(phone_number_id, from, res);
             }
@@ -53,26 +52,24 @@ exports.handleMessage = (req, res) => {
                 const userText = messageObject.text.body;
 
                 switch (currentStep) {
-                    case 'name':
-                        // Armazena o nome e avança para o email
-                        userFlows[from].data.name = userText;
-                        userFlows[from].step = 'email';
-                        askNextStep(phone_number_id, from, res);
+                    case 'password':
+                        // Armazena a senha e avança para a confirmação
+                        userFlows[from].data.password = userText;
+                        userFlows[from].step = 'confirmPassword';
+                        askNextStep(phone_number_id, from, res); // Solicita confirmação da senha
                         break;
 
-                    case 'email':
-                        // Armazena o email e avança para a confirmação
-                        userFlows[from].data.email = userText;
-                        askNextStep(phone_number_id, from, res);
-                        break;
-
-                    case 'final':
-                        // Confirmar os dados e salvar
-                        if (userText.toLowerCase() === 'sim') {
-                            saveUserToDatabase(from, userFlows[from].data);
+                    case 'confirmPassword':
+                        // Verifica se a confirmação da senha corresponde
+                        if (userText === userFlows[from].data.password) {
+                            // Senha confirmada
+                            saveUserToDatabase(from, { password: userFlows[from].data.password });
                             res.sendStatus(200);
                         } else {
-                            res.sendStatus(400);
+                            res.send({
+                                status: 400,
+                                body: 'As senhas não coincidem. Por favor, tente novamente.'
+                            });
                         }
                         break;
 
@@ -90,5 +87,3 @@ exports.handleMessage = (req, res) => {
         res.sendStatus(404);
     }
 };
-
-
