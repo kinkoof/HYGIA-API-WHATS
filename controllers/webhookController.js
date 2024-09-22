@@ -49,11 +49,10 @@ exports.handleMessage = (req, res) => {
                     // Caso o usuário já esteja no fluxo de registro
                     const currentStep = userFlows[from].step;
                     const userText = messageObject.text.body;
-
+                    console.log(userText)
                     switch (currentStep) {
                         case 'password':
-                            // Armazena a senha e avança para a confirmação
-                            userFlows[from].data.password = userText;
+                            userFlows[from].data.password = userText
                             userFlows[from].step = 'confirmPassword';
                             askNextStep(phone_number_id, from, res); // Solicita confirmação da senha
                             break;
@@ -69,6 +68,7 @@ exports.handleMessage = (req, res) => {
                                 });
                                 delete userFlows[from]; // Limpa o fluxo após registro
                             } else {
+                                console.log("password controller")
                                 res.send({
                                     status: 400,
                                     body: 'As senhas não coincidem. Por favor, tente novamente.'

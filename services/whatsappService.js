@@ -113,6 +113,7 @@ exports.askNextStep = (phone_number_id, from, userText, res) => {
                 delete userFlows[from]; // Limpa o fluxo após registro
             } else {
                 message = 'As senhas não coincidem. Tente novamente.';
+                console.log("password service")
                 userFlows[from].step = 'password'; // Retorna para a senha
             }
             break;
