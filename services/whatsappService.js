@@ -2,36 +2,44 @@ const axios = require('axios');
 const { ACCESS_TOKEN } = require('../config/config');
 const userFlows = require('../state/userFlows');
 
-// Função reutilizável para enviar mensagens
-const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null) => {
-    const messageData = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to,
-        type: buttons ? 'interactive' : 'text',
-        ...(buttons ? {
+// Função para enviar mensagem de endereço
+const sendAddressMessage = (phone_number_id, from, res) => {
+    axios({
+        method: 'POST',
+        url: `https://graph.facebook.com/v15.0/${phone_number_id}/messages`,
+        headers: {
+            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+        },
+        data: {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: from,
+            type: 'interactive',
             interactive: {
-                type: 'button',
-                header: { type: 'text', text: 'Bem Vindo' },
-                body: { text },
-                action: { buttons: buttons.map(button => ({ type: 'reply', reply: button })) }
+                type: 'address_message',
+                body: {
+                    text: 'Obrigado pelo seu pedido! Diga-nos para qual endereço gostaria de enviá-lo.'
+                },
+                action: {
+                    name: 'address_message',
+                    parameters: {
+                        country: 'BR' // Código ISO do país
+                    }
+                }
             }
-        } : {
-            text: { body: text }
-        })
-    };
-
-    axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
-        .then(() => res.sendStatus(200))
-        .catch(error => {
-            console.error('Error sending message:', error);
-            res.sendStatus(500);
-        });
+        }
+    })
+    .then(() => res.sendStatus(200))
+    .catch(error => {
+        console.error('Error sending address message:', error);
+        res.sendStatus(500);
+    });
 };
 
-// Inicia o fluxo de registro
+// Função para iniciar o fluxo de registro (pedindo senha)
 const startRegisterFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { step: 'password', data: { phoneNumber: from } }; // Armazena o número do usuário
+    userFlows[from] = { step: 'password', data: { phoneNumber: from } };
     sendWhatsAppMessage(phone_number_id, from, 'Para começar seu registro, defina uma Senha:', res);
 };
 
@@ -50,7 +58,7 @@ const handleRegistrationStep = (phone_number_id, from, userText, res) => {
 
         case 'confirmPassword':
             if (userText === userFlows[from].data.password) {
-                userFlows[from].step = 'email'; // Avança para o passo do e-mail
+                userFlows[from].step = 'email';
                 sendWhatsAppMessage(phone_number_id, from, 'Agora, por favor, informe seu e-mail:', res);
             } else {
                 userFlows[from].step = 'password';
@@ -59,9 +67,15 @@ const handleRegistrationStep = (phone_number_id, from, userText, res) => {
             break;
 
         case 'email':
-            userFlows[from].data.email = userText; // Armazena o e-mail do usuário
-            const { phoneNumber, password, email } = userFlows[from].data; // Pega os dados
-            saveUserToDatabase(from, { phoneNumber, password, email });
+            userFlows[from].data.email = userText;
+            userFlows[from].step = 'address';
+            sendAddressMessage(phone_number_id, from, res); // Envia a mensagem pedindo o endereço
+            break;
+
+        case 'address':
+            userFlows[from].data.address = userText; // Armazena o endereço fornecido pelo usuário
+            const { phoneNumber, password, email, address } = userFlows[from].data;
+            saveUserToDatabase(from, { phoneNumber, password, email, address });
             sendWhatsAppMessage(phone_number_id, from, `Parabéns! Seu registro foi concluído com sucesso.`, res);
             delete userFlows[from];
             break;
@@ -71,7 +85,7 @@ const handleRegistrationStep = (phone_number_id, from, userText, res) => {
 // Função para salvar o usuário no banco de dados
 const saveUserToDatabase = (from, userData) => {
     console.log('Salvando no banco de dados:', { from, ...userData });
-    // Aqui você incluiria a lógica para salvar no banco, como uma inserção no MongoDB, MySQL, etc.
+    // Aqui você incluiria a lógica para salvar no banco de dados
 };
 
 module.exports = { sendWhatsAppMessage, startRegisterFlow, handleRegistrationStep, saveUserToDatabase };
