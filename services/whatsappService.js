@@ -53,13 +53,13 @@ exports.sendMessage = (phone_number_id, from, res) => {
             },
         },
     })
-    .then(() => {
-        res.sendStatus(200);
-    })
-    .catch((error) => {
-        console.error('Error sending message:', error);
-        res.sendStatus(500);
-    });
+        .then(() => {
+            res.sendStatus(200);
+        })
+        .catch((error) => {
+            console.error('Error sending message:', error);
+            res.sendStatus(500);
+        });
 };
 
 // Inicia o fluxo de registro
@@ -83,13 +83,13 @@ exports.startRegisterFlow = (phone_number_id, from, res) => {
             },
         },
     })
-    .then(() => {
-        res.sendStatus(200);
-    })
-    .catch((error) => {
-        console.error('Error sending message:', error);
-        res.sendStatus(500);
-    });
+        .then(() => {
+            res.sendStatus(200);
+        })
+        .catch((error) => {
+            console.error('Error sending message:', error);
+            res.sendStatus(500);
+        });
 };
 
 exports.askNextStep = (phone_number_id, from, res) => {
@@ -98,10 +98,22 @@ exports.askNextStep = (phone_number_id, from, res) => {
 
     switch (currentStep) {
         case 'password':
-            message = 'Por favor, confirme sua Senha:';
-            userFlows[from].step = 'confirmPassword'; // Avança para a confirmação
+            // Armazena a senha e avança para a confirmação
+            userFlows[from].data.password = userText;
+            userFlows[from].step = 'confirmPassword';
+            askNextStep(phone_number_id, from, res); // Solicita confirmação da senha
             break;
         case 'confirmPassword':
+            // Verifica se a confirmação da senha corresponde
+            if (userText === userFlows[from].data.password) {
+                // Senha confirmada
+                saveUserToDatabase(from, { password: userFlows[from].data.password });
+                res.send({ status: 200, body: 'Registro completo!' });
+                delete userFlows[from]; // Limpa o fluxo após registro
+            } else {
+                res.send({ status: 400, body: 'As senhas não coincidem. Por favor, tente novamente.' });
+            }
+            break;
             // Lógica para verificar a senha
             const { password } = userFlows[from].data;
             const userText = req.body.entry[0].changes[0].value.messages[0].text.body;
@@ -136,13 +148,13 @@ exports.askNextStep = (phone_number_id, from, res) => {
             },
         },
     })
-    .then(() => {
-        res.sendStatus(200);
-    })
-    .catch((error) => {
-        console.error('Error sending message:', error);
-        res.sendStatus(500);
-    });
+        .then(() => {
+            res.sendStatus(200);
+        })
+        .catch((error) => {
+            console.error('Error sending message:', error);
+            res.sendStatus(500);
+        });
 };
 
 exports.saveUserToDatabase = (from, userData) => {
