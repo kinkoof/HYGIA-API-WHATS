@@ -37,7 +37,7 @@ exports.handleMessage = (req, res) => {
             if (messageObject.button) {
                 const buttonResponse = messageObject.button.reply.id;
 
-                if (buttonResponse === 'register') {
+                if (buttonResponse === 'Se registrar') {
                     // Inicia o fluxo de registro
                     startRegisterFlow(phone_number_id, from, res);
                 } else {
