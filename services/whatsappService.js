@@ -101,28 +101,16 @@ exports.askNextStep = (phone_number_id, from, res) => {
             // Armazena a senha e avança para a confirmação
             userFlows[from].data.password = userText;
             userFlows[from].step = 'confirmPassword';
-            askNextStep(phone_number_id, from, res); // Solicita confirmação da senha
+            message = 'Por favor, confirme sua senha:'; // Solicita confirmação da senha
             break;
         case 'confirmPassword':
+            // Verifica se a confirmação da senha corresponde
             // Verifica se a confirmação da senha corresponde
             if (userText === userFlows[from].data.password) {
                 // Senha confirmada
                 saveUserToDatabase(from, { password: userFlows[from].data.password });
-                res.send({ status: 200, body: 'Registro completo!' });
+                message = `Parabéns, ${from}! Seu registro foi concluído com sucesso.`;
                 delete userFlows[from]; // Limpa o fluxo após registro
-            } else {
-                res.send({ status: 400, body: 'As senhas não coincidem. Por favor, tente novamente.' });
-            }
-            break;
-            // Lógica para verificar a senha
-            const { password } = userFlows[from].data;
-            const userText = req.body.entry[0].changes[0].value.messages[0].text.body;
-
-            if (userText === password) {
-                // Senha confirmada
-                saveUserToDatabase(from, { password }); // Salva apenas a senha
-                message = 'Registro completo!';
-                userFlows[from] = {}; // Limpa o fluxo
             } else {
                 message = 'As senhas não coincidem. Tente novamente.';
                 userFlows[from].step = 'password'; // Retorna para a senha
