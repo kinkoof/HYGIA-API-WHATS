@@ -33,16 +33,18 @@ exports.handleMessage = (req, res) => {
             const phone_number_id = entry.metadata.phone_number_id;
             const from = messageObject.from;
 
+            console.log('Mensagem recebida:', messageObject); // Log para ver todo o conteúdo da mensagem
+
             // Caso o usuário interaja com botões
             if (messageObject.button) {
                 const buttonResponse = messageObject.button.reply.id;
 
-                if (buttonResponse === 'Se registrar') {
+                console.log('Botão selecionado:', buttonResponse); // Log para ver o ID do botão
+
+                if (buttonResponse === 'register') {
                     // Inicia o fluxo de registro
-                    console.log("registrar")
                     startRegisterFlow(phone_number_id, from, res);
                 } else {
-                    console.log("nada")
                     res.sendStatus(200);
                 }
             }
@@ -93,3 +95,4 @@ exports.handleMessage = (req, res) => {
         res.sendStatus(404);
     }
 };
+
