@@ -63,8 +63,9 @@ exports.sendMessage = (phone_number_id, from, res) => {
 };
 
 // Inicia o fluxo de registro
+// Inicia o fluxo de registro
 exports.startRegisterFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { step: 'name', data: {} };
+    userFlows[from] = { step: 'password', data: {} };
 
     axios({
         method: 'POST',
@@ -78,7 +79,7 @@ exports.startRegisterFlow = (phone_number_id, from, res) => {
             to: from,
             type: 'text',
             text: {
-                body: 'Para começar seu registro, por favor, informe seu nome completo:',
+                body: 'Para começar seu registro, defina uma Senha:',
             },
         },
     })
@@ -96,13 +97,24 @@ exports.askNextStep = (phone_number_id, from, res) => {
     let message = '';
 
     switch (currentStep) {
-        case 'email':
-            message = 'Agora, por favor, informe seu email:';
-            userFlows[from].step = 'confirmation'; // Após email, passa para a confirmação
+        case 'password':
+            message = 'Por favor, confirme sua Senha:';
+            userFlows[from].step = 'confirmPassword'; // Avança para a confirmação
             break;
-        case 'confirmation':
-            message = `Seu nome: ${userFlows[from].data.name}\nSeu email: ${userFlows[from].data.email}\nTudo certo? (Responda com 'sim' para confirmar)`;
-            userFlows[from].step = 'final'; // Avança para a confirmação final
+        case 'confirmPassword':
+            // Lógica para verificar a senha
+            const { password } = userFlows[from].data;
+            const userText = req.body.entry[0].changes[0].value.messages[0].text.body;
+
+            if (userText === password) {
+                // Senha confirmada
+                saveUserToDatabase(from, { password }); // Salva apenas a senha
+                message = 'Registro completo!';
+                userFlows[from] = {}; // Limpa o fluxo
+            } else {
+                message = 'As senhas não coincidem. Tente novamente.';
+                userFlows[from].step = 'password'; // Retorna para a senha
+            }
             break;
         default:
             message = 'Não entendi, por favor, tente novamente.';
@@ -132,6 +144,29 @@ exports.askNextStep = (phone_number_id, from, res) => {
         res.sendStatus(500);
     });
 };
+
+// Modifique a parte onde você armazena a senha
+else if (messageObject.text && userFlows[from]) {
+    const currentStep = userFlows[from].step;
+    const userText = messageObject.text.body;
+
+    switch (currentStep) {
+        case 'password':
+            // Armazena a senha e avança para a confirmação
+            userFlows[from].data.password = userText;
+            askNextStep(phone_number_id, from, res);
+            break;
+
+        case 'confirmPassword':
+            // A lógica para confirmar a senha deve estar aqui
+            askNextStep(phone_number_id, from, res);
+            break;
+
+        default:
+            res.sendStatus(200);
+            break;
+    }
+}
 
 exports.saveUserToDatabase = (from, userData) => {
     console.log('Salvando no banco de dados:', userData);
