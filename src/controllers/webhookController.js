@@ -1,4 +1,4 @@
-const { sendWhatsAppMessage, startRegisterFlow, handleRegistrationStep, saveUserToDatabase } = require('../services/whatsappService');
+const { sendWhatsAppMessage, startRegisterFlow, handleRegistrationStep, saveUserToDatabase } = require('../state/userFlows');
 const userFlows = require('../state/userFlows');
 // teste
 // Valida o token e retorna o desafio

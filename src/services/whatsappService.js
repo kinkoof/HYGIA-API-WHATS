@@ -1,87 +1,120 @@
 const axios = require('axios');
+const bcrypt = require('bcryptjs');
 const { ACCESS_TOKEN } = require('../config/config');
+const userFlows = require('../state/userFlows');
 
-// Enviar mensagem de botões
-const sendButtonsMessage = async (phone_number_id, from) => {
-    try {
-        const response = await axios({
-            method: "POST",
-            url: `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
-            data: {
-                messaging_product: "whatsapp",
-                to: from,
-                type: "interactive",
+const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+// Função reutilizável para enviar mensagens
+const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isLocationRequest = false) => {
+    let messageData;
+
+    if (isLocationRequest) {
+        // Construindo a mensagem de solicitação de localização
+        messageData = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to,
+            type: 'interactive',
+            interactive: {
+                type: 'location_request_message',
+                body: {
+                    text
+                },
+                action: {
+                    name: 'send_location'
+                }
+            }
+        };
+    } else {
+        // Construindo a mensagem de texto ou botões interativos
+        messageData = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to,
+            type: buttons ? 'interactive' : 'text',
+            ...(buttons ? {
                 interactive: {
-                    type: "button",
-                    header: {
-                        type: "text",
-                        text: "Escolha uma opção"
-                    },
-                    body: {
-                        text: "Selecione uma das opções abaixo:"
-                    },
-                    action: {
-                        buttons: [
-                            {
-                                type: "reply",
-                                reply: {
-                                    id: "buy",
-                                    title: "Comprar Remédio"
-                                }
-                            },
-                            {
-                                type: "reply",
-                                reply: {
-                                    id: "register",
-                                    title: "Se registrar"
-                                }
-                            },
-                            {
-                                type: "reply",
-                                reply: {
-                                    id: "login",
-                                    title: "Login"
-                                }
-                            }
-                        ]
-                    }
+                    type: 'button',
+                    header: { type: 'text', text: 'Bem Vindo' },
+                    body: { text },
+                    action: { buttons: buttons.map(button => ({ type: 'reply', reply: button })) }
                 }
-            },
-            headers: {
-                "Content-Type": "application/json"
-            }
+            } : {
+                text: { body: text }
+            })
+        };
+    }
+
+    // Enviando a mensagem via API do WhatsApp
+    axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
+        .then(() => res.sendStatus(200))
+        .catch(error => {
+            console.error('Error sending message:', error);
+            res.sendStatus(500);
         });
-        console.log('Botões enviados com sucesso:', response.data);
-    } catch (error) {
-        console.error('Erro ao enviar botões:', error.response ? error.response.data : error.message);
+};
+
+// Inicia o fluxo de registro
+const startRegisterFlow = (phone_number_id, from, res) => {
+    userFlows[from] = { step: 'password', data: { phoneNumber: from } }; // Armazena o número do usuário
+    sendWhatsAppMessage(phone_number_id, from, 'Para começar seu registro, defina uma Senha:', res);
+};
+
+// Gerencia o fluxo de registro
+const handleRegistrationStep = (phone_number_id, from, userText, res) => {
+    const currentStep = userFlows[from]?.step;
+
+    if (!currentStep) return sendWhatsAppMessage(phone_number_id, from, 'Não entendi, por favor, tente novamente.', res);
+
+    switch (currentStep) {
+        case 'password':
+            // Hash a senha
+            const hashedPassword = bcrypt.hashSync(userText, 10);
+            userFlows[from].data.password = hashedPassword;
+            userFlows[from].step = 'confirmPassword';
+            sendWhatsAppMessage(phone_number_id, from, 'Por favor, confirme sua senha:', res);
+            break;
+
+        case 'confirmPassword':
+            // Comparar a senha hash com a entrada
+            const isPasswordMatch = bcrypt.compareSync(userText, userFlows[from].data.password);
+            if (isPasswordMatch) {
+                userFlows[from].step = 'email';
+                sendWhatsAppMessage(phone_number_id, from, 'Agora, por favor, informe seu e-mail:', res);
+            } else {
+                userFlows[from].step = 'password';
+                sendWhatsAppMessage(phone_number_id, from, 'As senhas não coincidem. Vamos começar de novo.', res);
+            }
+            break;
+
+        case 'email':
+            if (validateEmail(userText)) {
+                userFlows[from].data.email = userText;
+                const { phoneNumber, password, email } = userFlows[from].data;
+                sendWhatsAppMessage(phone_number_id, from, 'Por favor, compartilhe sua localização:', res, null, true);
+                userFlows[from].step = 'location'; // Avança para o passo da localização
+            } else {
+                sendWhatsAppMessage(phone_number_id, from, 'O e-mail fornecido não é válido. Por favor, tente novamente.', res);
+            }
+            break;
+
+        case 'location':
+            userFlows[from].data.location = userText; // Aqui, a localização deve ser capturada no evento
+            const { phoneNumber, password, email, location } = userFlows[from].data;
+            saveUserToDatabase(from, { phoneNumber, password, email, location });
+            sendWhatsAppMessage(phone_number_id, from, 'Parabéns! Seu registro foi concluído com sucesso.', res);
+            delete userFlows[from];
+            break;
     }
 };
 
-// Enviar mensagem de texto
-const sendTextMessage = async (phone_number_id, from, message) => {
-    try {
-        const response = await axios({
-            method: "POST",
-            url: `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
-            data: {
-                messaging_product: "whatsapp",
-                to: from,
-                type: "text",
-                text: {
-                    body: message
-                }
-            },
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-        console.log('Mensagem enviada com sucesso:', response.data);
-    } catch (error) {
-        console.error('Erro ao enviar mensagem:', error.response ? error.response.data : error.message);
-    }
+// Função para salvar o usuário no banco de dados
+const saveUserToDatabase = (from, userData) => {
+    console.log('Salvando no banco de dados:', { from, ...userData });
 };
 
-module.exports = {
-    sendButtonsMessage,
-    sendTextMessage
-};
+module.exports = { sendWhatsAppMessage, startRegisterFlow, handleRegistrationStep, saveUserToDatabase };
