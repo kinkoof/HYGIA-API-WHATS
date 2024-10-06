@@ -1,9 +1,7 @@
 const { sendWhatsAppMessage } = require('../services/whatsappService');
-const { startRegisterFlow, handleRegistrationStep } = require('../services/registrationService');
-const { saveUserToDatabase } = require('../services/userService');
 const userFlows = require('../state/userFlows');
-// teste
-// Valida o token e retorna o desafio
+
+// Verifica o Webhook
 exports.verifyWebhook = (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
 
@@ -21,8 +19,6 @@ exports.verifyWebhook = (req, res) => {
 exports.handleMessage = (req, res) => {
     const body = req.body;
 
-    if (body.object !== 'whatsapp_business_account') return res.sendStatus(404);
-
     const entry = body.entry?.[0]?.changes?.[0]?.value;
     const messageObject = entry?.messages?.[0];
 
@@ -35,7 +31,7 @@ exports.handleMessage = (req, res) => {
         const buttonResponse = messageObject.interactive.button_reply.id;
 
         if (buttonResponse === 'register') {
-            startRegisterFlow(phone_number_id, from, res);
+            sendRegisterLink(phone_number_id, from, res);
         } else {
             res.sendStatus(200);
         }
@@ -49,27 +45,15 @@ exports.handleMessage = (req, res) => {
                 { id: 'register', title: 'Se registrar' },
             ]);
         } else {
-            handleRegistrationStep(phone_number_id, from, userText, res);
-        }
-    } else if (messageObject.type === 'location') {
-        const locationData = messageObject.location;
-        const location = {
-            address: locationData.address,
-            latitude: locationData.latitude,
-            longitude: locationData.longitude,
-            name: locationData.name
-        };
-
-        if (userFlows[from]) {
-            userFlows[from].data.location = location; // Salva a localização no fluxo do usuário
-            const { phoneNumber, password, email } = userFlows[from].data;
-            saveUserToDatabase(from, { phoneNumber, password, email, location }); // Salva no banco de dados
-            sendWhatsAppMessage(phone_number_id, from, 'Obrigado por compartilhar sua localização! Seu registro foi concluído com sucesso.', res);
-            delete userFlows[from];
-        } else {
-            sendWhatsAppMessage(phone_number_id, from, 'Localização recebida, mas não estou em um fluxo de registro.', res);
+            res.sendStatus(200);
         }
     } else {
         res.sendStatus(200);
     }
+};
+
+// Função para enviar o link de registro
+const sendRegisterLink = (phone_number_id, from, res) => {
+    const registrationLink = 'https://seusite.com/registro';
+    sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
 };
