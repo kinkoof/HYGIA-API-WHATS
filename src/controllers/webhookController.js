@@ -96,12 +96,12 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
 
 // Função para enviar o link de registro
 const sendRegisterLink = (phone_number_id, from, res) => {
-    const registrationLink = 'http://localhost:3001/auth/register';
+    const registrationLink = 'https://hygia-front-whats.vercel.app/auth/register';
     sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
 };
 
 // Função para enviar o link de login
 const sendLoginLink = (phone_number_id, from, res) => {
-    const loginLink = 'http://localhost:3001/auth/login';
+    const loginLink = 'https://hygia-front-whats.vercel.app/auth/login';
     sendWhatsAppMessage(phone_number_id, from, `Para fazer login, acesse o seguinte link: ${loginLink}`, res);
 };
