@@ -1,4 +1,5 @@
 const { sendWhatsAppMessage } = require('../services/whatsappService');
+const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 
 exports.verifyWebhook = (req, res) => {
@@ -33,13 +34,18 @@ exports.handleMessage = (req, res) => {
             sendRegisterLink(phone_number_id, from, res);
         } else if (buttonResponse === 'login') {
             sendLoginLink(phone_number_id, from, res);
+        } else if (buttonResponse === 'buy') {
+            startBuyFlow(phone_number_id, from, res);
         } else {
             res.sendStatus(200);
         }
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
 
-        if (!userFlows[from]) {
+        // Se o usuário estiver no fluxo de compra
+        if (userFlows[from] === 'buying') {
+            processBuyRequest(phone_number_id, from, userText, res);
+        } else if (!userFlows[from]) {
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
                 { id: 'buy', title: 'Comprar medicamentos' },
                 { id: 'login', title: 'Entrar em sua conta' },
@@ -50,6 +56,41 @@ exports.handleMessage = (req, res) => {
         }
     } else {
         res.sendStatus(200);
+    }
+};
+
+// Função para iniciar o fluxo de compra
+const startBuyFlow = (phone_number_id, from, res) => {
+    userFlows[from] = 'buying'; // Atualiza o fluxo para "buying"
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, me diga o nome do produto que deseja comprar.', res);
+};
+
+// Função para processar o pedido de compra
+const processBuyRequest = async (phone_number_id, from, productName, res) => {
+    try {
+        // Consulta ao banco de dados para listar todos os produtos
+        const [rows] = await db.execute('SELECT name, price FROM products');
+
+        // Verifica se existem produtos no banco
+        if (rows.length === 0) {
+            sendWhatsAppMessage(phone_number_id, from, 'Desculpe, nenhum produto está disponível no momento.', res);
+            return;
+        }
+
+        // Formata a lista de produtos para enviar via WhatsApp
+        let productList = 'Aqui estão os produtos disponíveis:\n';
+        rows.forEach((product, index) => {
+            productList += `${index + 1}. ${product.name} - R$${product.price}\n`;
+        });
+
+        // Envia a lista de produtos para o usuário
+        sendWhatsAppMessage(phone_number_id, from, productList, res);
+
+        // Limpa o fluxo do usuário após enviar a lista
+        delete userFlows[from];
+    } catch (error) {
+        console.error('Erro ao consultar o banco de dados:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
 };
 
