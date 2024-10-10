@@ -52,6 +52,6 @@ exports.handleMessage = (req, res) => {
 };
 
 const sendRegisterLink = (phone_number_id, from, res) => {
-    const registrationLink = 'https://seusite.com/registro';
+    const registrationLink = 'http://localhost:3001/auth/register';
     sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
 };
