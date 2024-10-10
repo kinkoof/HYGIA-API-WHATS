@@ -1,18 +1,25 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 require('dotenv').config();
 
 const webhookRoutes = require('../src/routes/webhook');
+const authRoutes = require('../src/routes/user');
 
 const app = express();
 
-// Middlewares
+app.use(cors());
+
 app.use(bodyParser.json());
 
-// Rotas
 app.use('/webhook', webhookRoutes);
+app.use('/auth', authRoutes);
 
-// Iniciar servidor
-app.listen(process.env.PORT, () => {
-    console.log(`Server is running on port ${process.env.PORT}`);
+app.use((req, res, next) => {
+    res.status(404).json({ message: 'Rota não encontrada!' });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });

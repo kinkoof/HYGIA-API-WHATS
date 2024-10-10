@@ -1,7 +1,6 @@
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 const userFlows = require('../state/userFlows');
 
-// Verifica o Webhook
 exports.verifyWebhook = (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
 
@@ -52,7 +51,6 @@ exports.handleMessage = (req, res) => {
     }
 };
 
-// Função para enviar o link de registro
 const sendRegisterLink = (phone_number_id, from, res) => {
     const registrationLink = 'https://seusite.com/registro';
     sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
