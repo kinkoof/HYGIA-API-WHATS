@@ -47,4 +47,37 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isL
         });
 };
 
-module.exports = { sendWhatsAppMessage };
+const sendWhatsAppList = (phone_number_id, to, listData, res) => {
+    const messageData = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'interactive',
+        interactive: {
+            type: 'list',
+            header: {
+                type: 'text',
+                text: listData.headerText || 'Escolha uma opção' // Cabeçalho da lista
+            },
+            body: {
+                text: listData.bodyText || 'Escolha uma opção abaixo' // Corpo da lista
+            },
+            footer: {
+                text: listData.footerText || '' // Rodapé da lista, opcional
+            },
+            action: {
+                button: listData.buttonText || 'Opções', // Texto do botão
+                sections: listData.sections // Seções com as opções
+            }
+        }
+    };
+
+    axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
+        .then(() => res.sendStatus(200))
+        .catch(error => {
+            console.error('Error sending list message:', error);
+            res.sendStatus(500);
+        });
+};
+
+module.exports = { sendWhatsAppMessage, sendWhatsAppList };
