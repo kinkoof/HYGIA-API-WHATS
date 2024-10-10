@@ -31,6 +31,8 @@ exports.handleMessage = (req, res) => {
 
         if (buttonResponse === 'register') {
             sendRegisterLink(phone_number_id, from, res);
+        } else if (buttonResponse === 'login') {
+            sendLoginLink(phone_number_id, from, res);
         } else {
             res.sendStatus(200);
         }
@@ -51,7 +53,14 @@ exports.handleMessage = (req, res) => {
     }
 };
 
+// Função para enviar o link de registro
 const sendRegisterLink = (phone_number_id, from, res) => {
     const registrationLink = 'http://localhost:3001/auth/register';
     sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
+};
+
+// Função para enviar o link de login
+const sendLoginLink = (phone_number_id, from, res) => {
+    const loginLink = 'http://localhost:3001/auth/login';
+    sendWhatsAppMessage(phone_number_id, from, `Para fazer login, acesse o seguinte link: ${loginLink}`, res);
 };
