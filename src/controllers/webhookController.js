@@ -1,4 +1,4 @@
-const { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppLinkButton } = require('../services/whatsappService');
+const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 
@@ -27,12 +27,6 @@ exports.handleMessage = (req, res) => {
     const { phone_number_id } = entry.metadata;
     const from = messageObject.from;
 
-    // Verifica se é uma resposta de localização
-    if (messageObject.location) {
-        handleLocationResponse(phone_number_id, from, messageObject.location, res);
-        return;
-    }
-
     if (messageObject.interactive?.type === 'button_reply') {
         const buttonResponse = messageObject.interactive.button_reply.id;
 
@@ -48,7 +42,7 @@ exports.handleMessage = (req, res) => {
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
 
-        if (userFlows[from]?.status === 'awaiting_product') {
+        if (userFlows[from] === 'buying') {
             processBuyRequest(phone_number_id, from, userText, res);
         } else if (!userFlows[from]) {
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
@@ -65,45 +59,17 @@ exports.handleMessage = (req, res) => {
 };
 
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_location' };
-    sendWhatsAppMessage(phone_number_id, from, 'Por favor, compartilhe sua localização para continuar com a compra.', res, null, true); // Solicita localização
-};
-
-const handleLocationResponse = (phone_number_id, from, location, res) => {
-    console.log(`Localização recebida: Latitude ${location.latitude}, Longitude ${location.longitude}`);
-
-    userFlows[from] = {
-        status: 'awaiting_product',
-        location: {
-            latitude: location.latitude,
-            longitude: location.longitude
-        }
-    };
-
-    sendWhatsAppMessage(phone_number_id, from, 'Obrigado pela localização. Agora, por favor, me diga o nome do produto que deseja comprar.', res);
+    userFlows[from] = 'buying';
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, me diga o nome do produto que deseja comprar.', res);
 };
 
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
-        const userLocation = userFlows[from]?.location;
-
-        if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-            sendWhatsAppMessage(phone_number_id, from, 'Por favor, envie sua localização primeiro.', res);
-            return;
-        }
-
-        const userLat = userLocation.latitude;
-        const userLon = userLocation.longitude;
-
         const [rows] = await db.execute(
-            `SELECT p.id, p.name, p.price, f.latitude, f.longitude,
-            (6371 * acos(cos(radians(?)) * cos(radians(f.latitude)) * cos(radians(f.longitude) - radians(?)) + sin(radians(?)) * sin(radians(f.latitude)))) AS distance
-            FROM products p
-            JOIN pharmacy f ON p.pharmacy_id = f.id
-            WHERE p.name LIKE ?
-            ORDER BY distance ASC
-            LIMIT 10`,
-            [userLat, userLon, userLat, `%${productName}%`]
+            `SELECT id, name, price
+            FROM products
+            WHERE name LIKE ?`,
+            [`%${productName}%`]
         );
 
         if (rows.length === 0) {
@@ -113,11 +79,11 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
 
         const listSections = [
             {
-                title: 'Produtos Encontrados (ordenados pela proximidade)',
+                title: 'Produtos Encontrados',
                 rows: rows.map((product) => ({
                     id: `product_${product.id}`,
-                    title: `${product.name} - R$${product.price.toFixed(2)}`,
-                    description: `Distância: ${product.distance.toFixed(2)} km`
+                    title: product.name,
+                    description: `R$${product.price.toFixed(2)}`
                 }))
             }
         ];
@@ -129,10 +95,8 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             sections: listSections
         };
 
-        // Enviar lista de produtos para o usuário
         sendWhatsAppList(phone_number_id, from, listData, res);
 
-        // Limpa o fluxo do usuário após processar a compra (ou mantenha dependendo da lógica)
         delete userFlows[from];
     } catch (error) {
         console.error('Erro ao consultar o banco de dados:', error);
@@ -141,23 +105,11 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
 };
 
 const sendRegisterLink = (phone_number_id, from, res) => {
-    const linkData = {
-        headerText: 'Registrar-se no Hygia',
-        bodyText: 'Clique no botão abaixo para se registrar.',
-        buttonText: 'Registrar',
-        url: 'https://hygia-front-whats.vercel.app/auth/register'
-    };
-
-    sendWhatsAppLinkButton(phone_number_id, from, linkData, res);
+    const registrationLink = 'https://hygia-front-whats.vercel.app/auth/register';
+    sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
 };
 
 const sendLoginLink = (phone_number_id, from, res) => {
-    const linkData = {
-        headerText: 'Fazer Login no Hygia',
-        bodyText: 'Clique no botão abaixo para fazer login.',
-        buttonText: 'Login',
-        url: 'https://hygia-front-whats.vercel.app/auth/login'
-    };
-
-    sendWhatsAppLinkButton(phone_number_id, from, linkData, res);
+    const loginLink = 'https://hygia-front-whats.vercel.app/auth/login';
+    sendWhatsAppMessage(phone_number_id, from, `Para fazer login, acesse o seguinte link: ${loginLink}`, res);
 };
