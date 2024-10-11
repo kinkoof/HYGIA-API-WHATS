@@ -73,10 +73,14 @@ const startBuyFlow = (phone_number_id, from, res) => {
     askForLocation(phone_number_id, from, res);
 };
 
-// Solicitar a localização do usuário
+// Solicitar a localização do usuário utilizando location_request_message
 const askForLocation = (phone_number_id, from, res) => {
-    sendWhatsAppMessage(phone_number_id, from, 'Por favor, envie sua localização para que possamos encontrar farmácias próximas a você.', res);
+    const messageText = 'Por favor, compartilhe sua localização para que possamos encontrar farmácias próximas a você.';
+
+    // Chamada para enviar mensagem solicitando a localização
+    sendWhatsAppMessage(phone_number_id, from, messageText, res, null, true);
 };
+
 
 // Processar a solicitação de compra
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
@@ -103,8 +107,8 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat / 2) * Math.sin(dLon / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c; // Distância em km
         };
