@@ -48,7 +48,7 @@ exports.handleMessage = (req, res) => {
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
 
-        if (userFlows[from] === 'buying') {
+        if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
         } else if (!userFlows[from]) {
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
@@ -65,19 +65,26 @@ exports.handleMessage = (req, res) => {
 };
 
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = 'awaiting_location';  // Atualiza o fluxo para aguardar a localização
+    userFlows[from] = { status: 'awaiting_location' };  // Atualiza o fluxo para aguardar a localização
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, compartilhe sua localização para continuar com a compra.', res, null, true); // Solicita localização
 };
 
 const handleLocationResponse = (phone_number_id, from, location, res) => {
     console.log(`Localização recebida: Latitude ${location.latitude}, Longitude ${location.longitude}`);
-    userFlows[from] = 'buying';
+    // Armazenar a localização recebida no userFlows
+    userFlows[from] = {
+        status: 'awaiting_product',  // Atualiza o status para aguardar o produto
+        location: {
+            latitude: location.latitude,
+            longitude: location.longitude
+        }
+    };
     sendWhatsAppMessage(phone_number_id, from, 'Obrigado pela localização. Agora, por favor, me diga o nome do produto que deseja comprar.', res);
 };
 
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
-        const userLocation = userFlows[from];
+        const userLocation = userFlows[from]?.location;
 
         if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
             sendWhatsAppMessage(phone_number_id, from, 'Por favor, envie sua localização primeiro.', res);
@@ -136,13 +143,13 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
 
         sendWhatsAppList(phone_number_id, from, listData, res);
 
+        // Limpa o fluxo após processar a compra
         delete userFlows[from];
     } catch (error) {
         console.error('Erro ao consultar o banco de dados:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
 };
-
 
 const sendRegisterLink = (phone_number_id, from, res) => {
     const linkData = {
