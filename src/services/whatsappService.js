@@ -82,4 +82,4 @@ const sendWhatsAppList = (phone_number_id, to, listData, res) => {
 
 
 
-module.exports = { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppLinkButton };
+module.exports = { sendWhatsAppMessage, sendWhatsAppList };
