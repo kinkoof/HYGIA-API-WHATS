@@ -2,6 +2,7 @@ const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappS
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 
+// Verificação do Webhook
 exports.verifyWebhook = (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
 
@@ -16,6 +17,7 @@ exports.verifyWebhook = (req, res) => {
     res.status(400).send('Bad Request');
 };
 
+// Tratamento das mensagens recebidas
 exports.handleMessage = (req, res) => {
     const body = req.body;
 
@@ -39,10 +41,17 @@ exports.handleMessage = (req, res) => {
         } else {
             res.sendStatus(200);
         }
+    } else if (messageObject.location) {
+        const userLat = messageObject.location.latitude;
+        const userLon = messageObject.location.longitude;
+
+        userFlows[from] = { status: 'awaiting_product', lat: userLat, lon: userLon };
+
+        sendWhatsAppMessage(phone_number_id, from, 'Obrigado! Agora, por favor, informe o nome do produto que deseja comprar.', res);
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
 
-        if (userFlows[from] === 'buying') {
+        if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
         } else if (!userFlows[from]) {
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
@@ -58,17 +67,28 @@ exports.handleMessage = (req, res) => {
     }
 };
 
+// Iniciar fluxo de compra e solicitar localização
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = 'buying';
-    sendWhatsAppMessage(phone_number_id, from, 'Por favor, me diga o nome do produto que deseja comprar.', res);
+    userFlows[from] = 'awaiting_location';
+    askForLocation(phone_number_id, from, res);
 };
 
+// Solicitar a localização do usuário
+const askForLocation = (phone_number_id, from, res) => {
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, envie sua localização para que possamos encontrar farmácias próximas a você.', res);
+};
+
+// Processar a solicitação de compra
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
+        const userLocation = userFlows[from];
+        const { lat: userLat, lon: userLon } = userLocation;
+
         const [rows] = await db.execute(
-            `SELECT id, name, price
-            FROM products
-            WHERE name LIKE ?`,
+            `SELECT p.id, p.name, p.price, f.latitude, f.longitude
+            FROM products p
+            JOIN pharmacies f ON p.pharmacy_id = f.id
+            WHERE p.name LIKE ?`,
             [`%${productName}%`]
         );
 
@@ -77,12 +97,30 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             return;
         }
 
+        // Função para calcular a distância usando a fórmula de Haversine
+        const calculateDistance = (lat1, lon1, lat2, lon2) => {
+            const R = 6371; // Raio da Terra em km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLon / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // Distância em km
+        };
+
+        // Adiciona a distância calculada ao produto e ordena os resultados
+        const productsWithDistance = rows.map((product) => {
+            const distance = calculateDistance(userLat, userLon, product.latitude, product.longitude);
+            return { ...product, distance };
+        }).sort((a, b) => a.distance - b.distance);
+
         const listSections = [
             {
                 title: 'Produtos Encontrados',
-                rows: rows.map((product) => ({
+                rows: productsWithDistance.map((product) => ({
                     id: `product_${product.id}`,
-                    title: product.name,
+                    title: `${product.name} - ${product.distance.toFixed(2)} km`,
                     description: `R$${product.price.toFixed(2)}`
                 }))
             }
@@ -104,11 +142,13 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
     }
 };
 
+// Enviar link de registro
 const sendRegisterLink = (phone_number_id, from, res) => {
     const registrationLink = 'https://hygia-front-whats.vercel.app/auth/register';
     sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
 };
 
+// Enviar link de login
 const sendLoginLink = (phone_number_id, from, res) => {
     const loginLink = 'https://hygia-front-whats.vercel.app/auth/login';
     sendWhatsAppMessage(phone_number_id, from, `Para fazer login, acesse o seguinte link: ${loginLink}`, res);
