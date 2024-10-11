@@ -88,15 +88,8 @@ const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
         type: 'interactive',
         interactive: {
             type: 'button',
-            header: {
-                type: 'text',
-                text: linkData.headerText || 'Link Disponível'
-            },
             body: {
                 text: linkData.bodyText || 'Clique no botão abaixo para acessar o link.'
-            },
-            footer: {
-                text: linkData.footerText || ''
             },
             action: {
                 buttons: [
@@ -117,5 +110,6 @@ const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
             res.sendStatus(500);
         });
 };
+
 
 module.exports = { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppLinkButton };

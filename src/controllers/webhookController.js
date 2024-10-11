@@ -71,6 +71,7 @@ const startBuyFlow = (phone_number_id, from, res) => {
 
 const handleLocationResponse = (phone_number_id, from, location, res) => {
     console.log(`Localização recebida: Latitude ${location.latitude}, Longitude ${location.longitude}`);
+
     // Armazenar a localização recebida no userFlows
     userFlows[from] = {
         status: 'awaiting_product',  // Atualiza o status para aguardar o produto
@@ -79,6 +80,8 @@ const handleLocationResponse = (phone_number_id, from, location, res) => {
             longitude: location.longitude
         }
     };
+
+    // Confirmação ao usuário
     sendWhatsAppMessage(phone_number_id, from, 'Obrigado pela localização. Agora, por favor, me diga o nome do produto que deseja comprar.', res);
 };
 
@@ -94,6 +97,7 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
         const userLat = userLocation.latitude;
         const userLon = userLocation.longitude;
 
+        // Busca produtos no banco de dados
         const [rows] = await db.execute(
             `SELECT p.id, p.name, p.price, f.latitude, f.longitude
             FROM products p
@@ -107,6 +111,7 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             return;
         }
 
+        // Função para calcular a distância entre dois pontos
         const calculateDistance = (lat1, lon1, lat2, lon2) => {
             const R = 6371;
             const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -118,11 +123,13 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             return R * c;
         };
 
+        // Ordenar produtos por proximidade
         const sortedProducts = rows.map(product => {
             const distance = calculateDistance(userLat, userLon, product.latitude, product.longitude);
             return { ...product, distance };
         }).sort((a, b) => a.distance - b.distance);
 
+        // Preparar a lista de produtos para envio via WhatsApp
         const listSections = [
             {
                 title: 'Produtos Encontrados (ordenados pela proximidade)',
@@ -141,9 +148,10 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             sections: listSections
         };
 
+        // Enviar lista de produtos para o usuário
         sendWhatsAppList(phone_number_id, from, listData, res);
 
-        // Limpa o fluxo após processar a compra
+        // Limpa o fluxo do usuário após processar a compra
         delete userFlows[from];
     } catch (error) {
         console.error('Erro ao consultar o banco de dados:', error);
