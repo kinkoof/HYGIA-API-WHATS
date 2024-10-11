@@ -102,10 +102,8 @@ const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
                 buttons: [
                     {
                         type: 'url',
-                        url_button: {
-                            display_text: linkData.buttonText || 'Clique Aqui',
-                            url: linkData.url
-                        }
+                        url: linkData.url,
+                        title: linkData.buttonText || 'Clique Aqui'
                     }
                 ]
             }
