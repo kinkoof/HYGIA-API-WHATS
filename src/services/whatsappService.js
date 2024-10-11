@@ -57,17 +57,17 @@ const sendWhatsAppList = (phone_number_id, to, listData, res) => {
             type: 'list',
             header: {
                 type: 'text',
-                text: listData.headerText || 'Escolha uma opção' // Cabeçalho da lista
+                text: listData.headerText || 'Escolha uma opção'
             },
             body: {
-                text: listData.bodyText || 'Escolha uma opção abaixo' // Corpo da lista
+                text: listData.bodyText || 'Escolha uma opção abaixo'
             },
             footer: {
-                text: listData.footerText || '' // Rodapé da lista, opcional
+                text: listData.footerText || ''
             },
             action: {
-                button: listData.buttonText || 'Opções', // Texto do botão
-                sections: listData.sections // Seções com as opções
+                button: listData.buttonText || 'Opções',
+                sections: listData.sections
             }
         }
     };
@@ -80,4 +80,44 @@ const sendWhatsAppList = (phone_number_id, to, listData, res) => {
         });
 };
 
-module.exports = { sendWhatsAppMessage, sendWhatsAppList };
+const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
+    const messageData = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'interactive',
+        interactive: {
+            type: 'button',
+            header: {
+                type: 'text',
+                text: linkData.headerText || 'Link Disponível'
+            },
+            body: {
+                text: linkData.bodyText || 'Clique no botão abaixo para acessar o link.'
+            },
+            footer: {
+                text: linkData.footerText || ''
+            },
+            action: {
+                buttons: [
+                    {
+                        type: 'url',
+                        url_button: {
+                            display_text: linkData.buttonText || 'Clique Aqui',
+                            url: linkData.url
+                        }
+                    }
+                ]
+            }
+        }
+    };
+
+    axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
+        .then(() => res.sendStatus(200))
+        .catch(error => {
+            console.error('Error sending link button message:', error);
+            res.sendStatus(500);
+        });
+};
+
+module.exports = { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppLinkButton };
