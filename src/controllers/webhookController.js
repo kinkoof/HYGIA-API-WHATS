@@ -91,7 +91,7 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
         const [rows] = await db.execute(
             `SELECT p.id, p.name, p.price, f.latitude, f.longitude
             FROM products p
-            JOIN pharmacies f ON p.pharmacy_id = f.id
+            JOIN pharmacy f ON p.pharmacy_id = f.id
             WHERE p.name LIKE ?`,
             [`%${productName}%`]
         );
