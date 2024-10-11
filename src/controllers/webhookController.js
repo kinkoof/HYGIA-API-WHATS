@@ -77,10 +77,21 @@ const handleLocationResponse = (phone_number_id, from, location, res) => {
 
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
+        const userLocation = userFlows[from];
+
+        if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+            sendWhatsAppMessage(phone_number_id, from, 'Por favor, envie sua localização primeiro.', res);
+            return;
+        }
+
+        const userLat = userLocation.latitude;
+        const userLon = userLocation.longitude;
+
         const [rows] = await db.execute(
-            `SELECT id, name, price
-            FROM products
-            WHERE name LIKE ?`,
+            `SELECT p.id, p.name, p.price, f.latitude, f.longitude
+            FROM products p
+            JOIN pharmacy f ON p.pharmacy_id = f.id
+            WHERE p.name LIKE ?`,
             [`%${productName}%`]
         );
 
@@ -89,13 +100,29 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             return;
         }
 
+        const calculateDistance = (lat1, lon1, lat2, lon2) => {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * (Math.PI / 180);
+            const dLon = (lon2 - lon1) * (Math.PI / 180);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        };
+
+        const sortedProducts = rows.map(product => {
+            const distance = calculateDistance(userLat, userLon, product.latitude, product.longitude);
+            return { ...product, distance };
+        }).sort((a, b) => a.distance - b.distance);
+
         const listSections = [
             {
-                title: 'Produtos Encontrados',
-                rows: rows.map((product) => ({
+                title: 'Produtos Encontrados (ordenados pela proximidade)',
+                rows: sortedProducts.map((product) => ({
                     id: `product_${product.id}`,
-                    title: product.name,
-                    description: `R$${product.price.toFixed(2)}`
+                    title: `${product.name} - R$${product.price.toFixed(2)}`,
+                    description: `Distância: ${product.distance.toFixed(2)} km`
                 }))
             }
         ];
@@ -115,6 +142,7 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
 };
+
 
 const sendRegisterLink = (phone_number_id, from, res) => {
     const linkData = {
