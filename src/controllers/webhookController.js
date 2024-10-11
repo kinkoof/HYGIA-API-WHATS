@@ -65,7 +65,7 @@ exports.handleMessage = (req, res) => {
 };
 
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_location' };  // Atualiza o fluxo para aguardar a localização
+    userFlows[from] = { status: 'awaiting_location' };
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, compartilhe sua localização para continuar com a compra.', res, null, true); // Solicita localização
 };
 

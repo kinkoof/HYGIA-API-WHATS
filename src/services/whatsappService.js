@@ -87,7 +87,7 @@ const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
         to,
         type: 'interactive',
         interactive: {
-            type: 'button',
+            type: 'button',  // Correto tipo de mensagem interativa para botões
             header: {
                 type: 'text',
                 text: linkData.headerText || 'Link Disponível'
@@ -102,7 +102,7 @@ const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
                 buttons: [
                     {
                         type: 'url',
-                        url: linkData.url,
+                        url: linkData.url,  // URL correta para o botão
                         title: linkData.buttonText || 'Clique Aqui'
                     }
                 ]
@@ -110,10 +110,10 @@ const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
         }
     };
 
-    axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
+    axios.post(`https://graph.facebook.com/v21.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
         .then(() => res.sendStatus(200))
         .catch(error => {
-            console.error('Error sending link button message:', error);
+            console.error('Error sending link button message:', error.response ? error.response.data : error);
             res.sendStatus(500);
         });
 };
