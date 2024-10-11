@@ -80,43 +80,6 @@ const sendWhatsAppList = (phone_number_id, to, listData, res) => {
         });
 };
 
-const sendWhatsAppLinkButton = (phone_number_id, to, linkData, res) => {
-    const messageData = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to,
-        type: 'interactive',
-        interactive: {
-            type: 'button',  // Correto tipo de mensagem interativa para botões
-            header: {
-                type: 'text',
-                text: linkData.headerText || 'Link Disponível'
-            },
-            body: {
-                text: linkData.bodyText || 'Clique no botão abaixo para acessar o link.'
-            },
-            footer: {
-                text: linkData.footerText || ''
-            },
-            action: {
-                buttons: [
-                    {
-                        type: 'url',
-                        url: linkData.url,  // URL correta para o botão
-                        title: linkData.buttonText || 'Clique Aqui'
-                    }
-                ]
-            }
-        }
-    };
-
-    axios.post(`https://graph.facebook.com/v21.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
-        .then(() => res.sendStatus(200))
-        .catch(error => {
-            console.error('Error sending link button message:', error.response ? error.response.data : error);
-            res.sendStatus(500);
-        });
-};
 
 
 module.exports = { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppLinkButton };
