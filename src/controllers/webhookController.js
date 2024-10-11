@@ -28,6 +28,7 @@ exports.handleMessage = (req, res) => {
     const { phone_number_id } = entry.metadata;
     const from = messageObject.from;
 
+    // Verifica se é uma resposta de localização
     if (messageObject.location) {
         handleLocationResponse(phone_number_id, from, messageObject.location, res);
         return;
@@ -48,16 +49,19 @@ exports.handleMessage = (req, res) => {
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
 
-        if (userFlows[from] === 'buying') {
+        // Adicionar log para verificar o fluxo
+        console.log(`Recebido texto do usuário: ${userText}, fluxo atual: ${userFlows[from]}`);
+
+        if (userFlows[from] && userFlows[from].location) {
+            console.log('Localização já recebida, processando o pedido...');
             processBuyRequest(phone_number_id, from, userText, res);
-        } else if (!userFlows[from]) {
+        } else {
+            console.log('Fluxo inicial, solicitando nome do produto.');
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
                 { id: 'buy', title: 'Comprar medicamentos' },
                 { id: 'login', title: 'Entrar em sua conta' },
                 { id: 'register', title: 'Se registrar' },
             ]);
-        } else {
-            res.sendStatus(200);
         }
     } else {
         res.sendStatus(200);
@@ -67,6 +71,7 @@ exports.handleMessage = (req, res) => {
 // Função para iniciar o fluxo de compra e pedir localização
 const startBuyFlow = (phone_number_id, from, res) => {
     userFlows[from] = 'awaiting_location';  // Atualiza o fluxo para aguardar a localização
+    console.log('Solicitando localização ao usuário...');
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, compartilhe sua localização para continuar com a compra.', res, null, true); // Solicita localização
 };
 
@@ -75,13 +80,9 @@ const handleLocationResponse = async (phone_number_id, from, location, res) => {
     const userCoordinates = { latitude: location.latitude, longitude: location.longitude };
 
     console.log(`Localização recebida: Latitude ${location.latitude}, Longitude ${location.longitude}`);
-    userFlows[from] = 'buying';  // Atualiza o fluxo para "buying" após receber a localização
+    userFlows[from] = { location: userCoordinates };  // Atualiza o fluxo para incluir a localização
 
-    // Solicita ao usuário o nome do produto
     sendWhatsAppMessage(phone_number_id, from, 'Obrigado pela localização. Agora, por favor, me diga o nome do produto que deseja comprar.', res);
-
-    // Armazena as coordenadas do usuário no fluxo
-    userFlows[from] = { location: userCoordinates };
 };
 
 // Função para converter CEP em coordenadas de latitude e longitude usando a API do ViaCEP
@@ -126,6 +127,8 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
         const userLocation = userFlows[from].location;  // Obtém a localização do usuário
 
+        console.log(`Processando pedido para o produto: ${productName}`);
+
         const [rows] = await db.execute(
             `SELECT p.id, p.name, p.price, f.cep
             FROM products p
@@ -135,19 +138,24 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
         );
 
         if (rows.length === 0) {
+            console.log('Nenhum produto encontrado.');
             sendWhatsAppMessage(phone_number_id, from, `Nenhum produto encontrado com o nome "${productName}".`, res);
             return;
         }
 
+        // Obter as coordenadas dos CEPs das farmácias e calcular a distância
         for (const product of rows) {
             const pharmacyCoordinates = await getCoordinatesFromCep(product.cep);
             if (pharmacyCoordinates) {
                 product.distance = calculateDistance(userLocation, pharmacyCoordinates);
+                console.log(`Distância calculada: ${product.distance} km para o produto ${product.name}`);
             } else {
-                product.distance = Infinity;
+                product.distance = Infinity; // Se não conseguir obter as coordenadas, assume distância infinita
+                console.log(`Não foi possível calcular a distância para o produto ${product.name}`);
             }
         }
 
+        // Ordenar os produtos pela distância
         rows.sort((a, b) => a.distance - b.distance);
 
         const listSections = [
@@ -168,6 +176,7 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             sections: listSections
         };
 
+        console.log('Enviando a lista de produtos...');
         sendWhatsAppList(phone_number_id, from, listData, res);
 
         delete userFlows[from];
@@ -175,4 +184,26 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
         console.error('Erro ao consultar o banco de dados:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
+};
+
+// Função para enviar o link de registro com botão interativo
+const sendRegisterLink = (phone_number_id, from, res) => {
+    const linkData = {
+        headerText: 'Registre-se',
+        bodyText: 'Para se registrar, clique no link abaixo:',
+        buttonText: 'Registrar',
+        url: 'https://hygia-front-whats.vercel.app/auth/register'
+    };
+    sendWhatsAppLinkButton(phone_number_id, from, linkData, res);
+};
+
+// Função para enviar o link de login com botão interativo
+const sendLoginLink = (phone_number_id, from, res) => {
+    const linkData = {
+        headerText: 'Login',
+        bodyText: 'Para fazer login, clique no link abaixo:',
+        buttonText: 'Entrar',
+        url: 'https://hygia-front-whats.vercel.app/auth/login'
+    };
+    sendWhatsAppLinkButton(phone_number_id, from, linkData, res);
 };
