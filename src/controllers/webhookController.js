@@ -29,6 +29,9 @@ exports.handleMessage = (req, res) => {
     const { phone_number_id } = entry.metadata;
     const from = messageObject.from;
 
+    // Log para depurar o estado do usuário
+    console.log('Estado do usuário:', userFlows[from]);
+
     if (messageObject.interactive?.type === 'button_reply') {
         const buttonResponse = messageObject.interactive.button_reply.id;
 
@@ -49,7 +52,12 @@ exports.handleMessage = (req, res) => {
         // Produto selecionado, adicionar ao carrinho
         const selectedProductId = messageObject.interactive.list_reply.id;
 
-        addToCart(phone_number_id, from, selectedProductId, res);
+        // Confirme que o usuário está na etapa certa antes de adicionar ao carrinho
+        if (userFlows[from]?.status === 'awaiting_product') {
+            addToCart(phone_number_id, from, selectedProductId, res);
+        } else {
+            res.sendStatus(400);
+        }
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
 
@@ -67,12 +75,6 @@ exports.handleMessage = (req, res) => {
     } else {
         res.sendStatus(200);
     }
-};
-
-// Iniciar fluxo de compra
-const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
-    sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
 // Adicionar item ao carrinho
@@ -94,6 +96,9 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         const product = rows[0];
         userFlows[from].cart.push(product);
 
+        // Atualiza o estado para que não continue no fluxo de seleção
+        userFlows[from].status = 'cart';
+
         sendWhatsAppMessage(phone_number_id, from, `${product.name} adicionado ao seu carrinho.`, res, [
             { id: 'buy', title: 'Adicionar mais produtos' },
             { id: 'checkout', title: 'Finalizar compra' }
@@ -102,6 +107,12 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
     }
+};
+
+// Iniciar fluxo de compra
+const startBuyFlow = (phone_number_id, from, res) => {
+    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
 // Mostrar o carrinho e opção para finalizar a compra
