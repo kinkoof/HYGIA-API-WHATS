@@ -99,10 +99,28 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         // Atualiza o estado para que não continue no fluxo de seleção
         userFlows[from].status = 'cart';
 
-        sendWhatsAppMessage(phone_number_id, from, `${product.name} adicionado ao seu carrinho.`, res, [
-            { id: 'buy', title: 'Adicionar mais produtos' },
-            { id: 'checkout', title: 'Finalizar compra' }
-        ]);
+        // Mensagem simplificada sem header para evitar problemas de formato
+        const messageData = {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: from,
+            type: "interactive",
+            interactive: {
+                type: "button",
+                body: {
+                    text: `${product.name} adicionado ao seu carrinho.`
+                },
+                action: {
+                    buttons: [
+                        { type: "reply", reply: { id: "buy", title: "Adicionar mais produtos" } },
+                        { type: "reply", reply: { id: "checkout", title: "Finalizar compra" } }
+                    ]
+                }
+            }
+        };
+
+        // Envia a mensagem com o formato ajustado
+        await sendWhatsAppMessage(phone_number_id, from, messageData, res);
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
