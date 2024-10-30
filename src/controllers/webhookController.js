@@ -38,16 +38,18 @@ exports.handleMessage = (req, res) => {
             sendLoginLink(phone_number_id, from, res);
         } else if (buttonResponse === 'buy') {
             startBuyFlow(phone_number_id, from, res);
+        } else if (buttonResponse === 'checkout') {
+            showCart(phone_number_id, from, res);
+        } else if (buttonResponse === 'confirm_purchase') {
+            confirmPurchase(phone_number_id, from, res);
         } else {
             res.sendStatus(200);
         }
-    } else if (messageObject.location) {
-        const userLat = messageObject.location.latitude;
-        const userLon = messageObject.location.longitude;
+    } else if (messageObject.interactive?.type === 'list_reply') {
+        // Produto selecionado, adicionar ao carrinho
+        const selectedProductId = messageObject.interactive.list_reply.id;
 
-        userFlows[from] = { status: 'awaiting_product', lat: userLat, lon: userLon };
-
-        sendWhatsAppMessage(phone_number_id, from, 'Obrigado! Agora, por favor, informe o nome do produto que deseja comprar.', res);
+        addToCart(phone_number_id, from, selectedProductId, res);
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
 
@@ -67,31 +69,82 @@ exports.handleMessage = (req, res) => {
     }
 };
 
-// Iniciar fluxo de compra e solicitar localização
+// Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = 'awaiting_location';
-    askForLocation(phone_number_id, from, res);
+    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
-// Solicitar a localização do usuário utilizando location_request_message
-const askForLocation = (phone_number_id, from, res) => {
-    const messageText = 'Por favor, compartilhe sua localização para que possamos encontrar farmácias próximas a você.';
+// Adicionar item ao carrinho
+const addToCart = async (phone_number_id, from, selectedProductId, res) => {
+    const productId = selectedProductId.replace('product_', '');
 
-    // Chamada para enviar mensagem solicitando a localização
-    sendWhatsAppMessage(phone_number_id, from, messageText, res, null, true);
+    try {
+        // Busca o produto no banco para obter os detalhes
+        const [rows] = await db.execute(
+            `SELECT id, name, price FROM products WHERE id = ?`,
+            [productId]
+        );
+
+        if (rows.length === 0) {
+            sendWhatsAppMessage(phone_number_id, from, 'Produto não encontrado.', res);
+            return;
+        }
+
+        const product = rows[0];
+        userFlows[from].cart.push(product);
+
+        sendWhatsAppMessage(phone_number_id, from, `${product.name} adicionado ao seu carrinho.`, res, [
+            { id: 'buy', title: 'Adicionar mais produtos' },
+            { id: 'checkout', title: 'Finalizar compra' }
+        ]);
+    } catch (error) {
+        console.error('Erro ao adicionar ao carrinho:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
+    }
 };
 
+// Mostrar o carrinho e opção para finalizar a compra
+const showCart = (phone_number_id, from, res) => {
+    const cart = userFlows[from]?.cart;
 
-// Processar a solicitação de compra
+    if (!cart || cart.length === 0) {
+        sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
+        return;
+    }
+
+    const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${item.price.toFixed(2)}`).join('\n');
+    const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+
+    sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
+        { id: 'confirm_purchase', title: 'Confirmar Compra' },
+        { id: 'buy', title: 'Adicionar mais produtos' }
+    ]);
+};
+
+// Confirmar e finalizar a compra
+const confirmPurchase = (phone_number_id, from, res) => {
+    const cart = userFlows[from]?.cart;
+
+    if (!cart || cart.length === 0) {
+        sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
+        return;
+    }
+
+    const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+
+    sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
+
+    // Limpa o carrinho após a compra
+    delete userFlows[from];
+};
+
+// Processar a solicitação de compra e mostrar produtos
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
-        const userLocation = userFlows[from];
-        const { lat: userLat, lon: userLon } = userLocation;
-
         const [rows] = await db.execute(
-            `SELECT p.id, p.name, p.price, f.latitude, f.longitude
+            `SELECT p.id, p.name, p.price
             FROM products p
-            JOIN pharmacy f ON p.pharmacy_id = f.id
             WHERE p.name LIKE ?`,
             [`%${productName}%`]
         );
@@ -101,30 +154,12 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             return;
         }
 
-        // Função para calcular a distância usando a fórmula de Haversine
-        const calculateDistance = (lat1, lon1, lat2, lon2) => {
-            const R = 6371; // Raio da Terra em km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLon / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c; // Distância em km
-        };
-
-        // Adiciona a distância calculada ao produto e ordena os resultados
-        const productsWithDistance = rows.map((product) => {
-            const distance = calculateDistance(userLat, userLon, product.latitude, product.longitude);
-            return { ...product, distance };
-        }).sort((a, b) => a.distance - b.distance);
-
         const listSections = [
             {
                 title: 'Produtos Encontrados',
-                rows: productsWithDistance.map((product) => ({
+                rows: rows.map((product) => ({
                     id: `product_${product.id}`,
-                    title: `${product.name} - ${product.distance.toFixed(2)} km`,
+                    title: product.name,
                     description: `R$${product.price.toFixed(2)}`
                 }))
             }
@@ -138,8 +173,6 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
         };
 
         sendWhatsAppList(phone_number_id, from, listData, res);
-
-        delete userFlows[from];
     } catch (error) {
         console.error('Erro ao consultar o banco de dados:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
