@@ -79,14 +79,16 @@ exports.handleMessage = (req, res) => {
 
 // Adicionar item ao carrinho
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
+    console.log('Adding to cart:', selectedProductId);
     const productId = selectedProductId.replace('product_', '');
 
     try {
-        // Busca o produto no banco para obter os detalhes
         const [rows] = await db.execute(
             `SELECT id, name, price FROM products WHERE id = ?`,
             [productId]
         );
+
+        console.log('Database response:', rows);
 
         if (rows.length === 0) {
             sendWhatsAppMessage(phone_number_id, from, 'Produto não encontrado.', res);
@@ -99,7 +101,8 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         // Atualiza o estado para que não continue no fluxo de seleção
         userFlows[from].status = 'cart';
 
-        // Envia a mensagem usando o formato simplificado
+        console.log('User flow after adding product:', userFlows[from]);
+
         sendWhatsAppMessage(
             phone_number_id,
             from,
@@ -115,7 +118,6 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
     }
 };
-
 
 // Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
