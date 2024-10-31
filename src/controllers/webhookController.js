@@ -108,7 +108,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         sendWhatsAppMessage(
             phone_number_id,
             from,
-            `${product.name} adicionado ao seu carrinho.`,
+            `produto adicionado ao seu carrinho.`,
             res,
             [
                 { id: 'buy', title: 'Adicionar mais produtos' },
