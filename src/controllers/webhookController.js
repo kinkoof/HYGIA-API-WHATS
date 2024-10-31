@@ -56,7 +56,7 @@ exports.handleMessage = (req, res) => {
         if (userFlows[from]?.status === 'awaiting_product') {
             addToCart(phone_number_id, from, selectedProductId, res);
         } else {
-            res.sendStatus(400);
+            sendWhatsAppMessage(phone_number_id, from, 'Por favor, selecione um produto da lista após iniciar uma compra.', res);
         }
     } else if (messageObject.text) {
         const userText = messageObject.text.body;
@@ -64,6 +64,7 @@ exports.handleMessage = (req, res) => {
         if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
         } else if (!userFlows[from]) {
+            // Se o usuário não tiver um fluxo ativo, envie as opções iniciais
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
                 { id: 'buy', title: 'Comprar medicamentos' },
                 { id: 'login', title: 'Entrar em sua conta' },
@@ -96,6 +97,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         }
 
         const product = rows[0];
+        if (!userFlows[from].cart) userFlows[from].cart = []; // Garante que o carrinho exista
         userFlows[from].cart.push(product);
 
         // Atualiza o estado para que não continue no fluxo de seleção
