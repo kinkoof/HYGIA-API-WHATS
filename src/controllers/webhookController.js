@@ -20,20 +20,24 @@ exports.verifyWebhook = (req, res) => {
 // Tratamento das mensagens recebidas
 exports.handleMessage = (req, res) => {
     const body = req.body;
-
     const entry = body.entry?.[0]?.changes?.[0]?.value;
     const messageObject = entry?.messages?.[0];
 
-    if (!messageObject) return res.sendStatus(404);
+    if (!messageObject) {
+        console.log('Mensagem não encontrada.');
+        return res.sendStatus(404);
+    }
 
     const { phone_number_id } = entry.metadata;
     const from = messageObject.from;
 
-    // Log para depurar o estado do usuário
+    console.log('Mensagem recebida:', messageObject);
     console.log('Estado do usuário:', userFlows[from]);
 
+    // Verificação se é uma resposta de botão
     if (messageObject.interactive?.type === 'button_reply') {
         const buttonResponse = messageObject.interactive.button_reply.id;
+        console.log(`Interação do usuário ${from}: ${buttonResponse}`);
 
         if (buttonResponse === 'register') {
             sendRegisterLink(phone_number_id, from, res);
@@ -48,23 +52,29 @@ exports.handleMessage = (req, res) => {
         } else {
             res.sendStatus(200);
         }
-    } else if (messageObject.interactive?.type === 'list_reply') {
-        // Produto selecionado, adicionar ao carrinho
+    }
+    // Verificação se é uma resposta de lista
+    else if (messageObject.interactive?.type === 'list_reply') {
         const selectedProductId = messageObject.interactive.list_reply.id;
+        console.log(`Produto selecionado pelo usuário ${from}: ${selectedProductId}`);
 
-        // Confirme que o usuário está na etapa certa antes de adicionar ao carrinho
-        if (userFlows[from]?.status === 'awaiting_product') {
+        // Atualizar o status do usuário para 'cart'
+        userFlows[from].status = 'cart';
+
+        if (userFlows[from]?.status === 'cart') {
             addToCart(phone_number_id, from, selectedProductId, res);
         } else {
             sendWhatsAppMessage(phone_number_id, from, 'Por favor, selecione um produto da lista após iniciar uma compra.', res);
         }
-    } else if (messageObject.text) {
+    }
+    // Verificação se é uma mensagem de texto
+    else if (messageObject.text) {
         const userText = messageObject.text.body;
+        console.log(`Texto recebido do usuário ${from}: ${userText}`);
 
         if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
         } else if (!userFlows[from]) {
-            // Se o usuário não tiver um fluxo ativo, envie as opções iniciais
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
                 { id: 'buy', title: 'Comprar medicamentos' },
                 { id: 'login', title: 'Entrar em sua conta' },
@@ -78,9 +88,8 @@ exports.handleMessage = (req, res) => {
     }
 };
 
-// Adicionar item ao carrinho
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
-    console.log('Adding to cart:', selectedProductId);
+    console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
     const productId = selectedProductId.replace('product_', '');
 
     try {
@@ -89,26 +98,25 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
             [productId]
         );
 
-        console.log('Database response:', rows);
+        console.log('Resposta do banco de dados:', rows);
 
         if (rows.length === 0) {
+            console.log(`Produto não encontrado para o ID: ${productId}`);
             sendWhatsAppMessage(phone_number_id, from, 'Produto não encontrado.', res);
             return;
         }
 
         const product = rows[0];
-        if (!userFlows[from].cart) userFlows[from].cart = []; // Garante que o carrinho exista
+        if (!userFlows[from].cart) userFlows[from].cart = [];
         userFlows[from].cart.push(product);
 
-        // Atualiza o estado para que não continue no fluxo de seleção
-        userFlows[from].status = 'cart';
-
-        console.log('User flow after adding product:', userFlows[from]);
+        userFlows[from].status = 'cart'; // Garanta que o status está definido
+        console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
         sendWhatsAppMessage(
             phone_number_id,
             from,
-            `produto adicionado ao seu carrinho.`,
+            `${product.name} adicionado ao seu carrinho.`,
             res,
             [
                 { id: 'buy', title: 'Adicionar mais produtos' },
