@@ -113,11 +113,16 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         userFlows[from].status = 'cart'; // Garanta que o status está definido
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
-        sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
-            { id: 'buy', title: 'Comprar medicamentos' },
-            { id: 'login', title: 'Entrar em sua conta' },
-            { id: 'register', title: 'Se registrar' },
-        ]);
+        sendWhatsAppMessage(
+            phone_number_id,
+            from,
+            `Produto adicionado ao seu carrinho.`,
+            res,
+            [
+                { id: 'buy', title: 'Adicionar mais produtos' },
+                { id: 'checkout', title: 'Finalizar compra' }
+            ]
+        );
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
