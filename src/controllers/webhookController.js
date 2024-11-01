@@ -67,7 +67,6 @@ exports.handleMessage = (req, res) => {
             sendWhatsAppMessage(phone_number_id, from, 'Por favor, selecione um produto da lista após iniciar uma compra.', res);
         }
     }
-    // Verificação se é uma mensagem de texto
     else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase(); // Converte para minúsculas para facilitar a verificação
         console.log(`Texto recebido do usuário ${from}: ${userText}`);
@@ -84,11 +83,16 @@ exports.handleMessage = (req, res) => {
                 sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
             }
         } else if (!userFlows[from]) {
-            sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res);
+            sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
+                { id: 'buy', title: 'Comprar medicamentos' },
+                { id: 'login', title: 'Entrar em sua conta' },
+                { id: 'register', title: 'Se registrar' },
+            ]);
         } else {
             res.sendStatus(200);
         }
     }
+
 
 };
 
@@ -117,14 +121,13 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         userFlows[from].status = 'cart';
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
-        // Enviar uma pergunta direta ao usuário
+        // Pergunta direta ao usuário se deseja continuar ou finalizar a compra
         sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra? Responda com "continuar" ou "finalizar".', res);
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
     }
 };
-
 
 // Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
