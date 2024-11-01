@@ -116,7 +116,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         sendWhatsAppMessage(phone_number_id, from, 'Produto adicionado ao seu carrinho.', res, [
             { id: 'buy', title: 'Adicionar mais produtos' },
             { id: 'checkout', title: 'Finalizar compra' },
-            { id: 'checkout', title: 'Finalizar compra' },
+            { id: 'checkout2', title: 'Finalizar compra' },
         ]);
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
