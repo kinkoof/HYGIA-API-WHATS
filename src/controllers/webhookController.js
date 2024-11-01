@@ -114,8 +114,8 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
         sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
-            { id: 'buy', title: 'Comprar medicamentos2' },
-            { id: 'login', title: 'Entrar em sua conta2' },
+            { id: 'buy', title: 'Comprar medicamentos' },
+            { id: 'login', title: 'Entrar em sua conta' },
             { id: 'register', title: 'Se registrar' },
         ]);
     } catch (error) {
