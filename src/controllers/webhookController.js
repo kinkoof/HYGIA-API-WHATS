@@ -69,23 +69,27 @@ exports.handleMessage = (req, res) => {
     }
     // Verificação se é uma mensagem de texto
     else if (messageObject.text) {
-        const userText = messageObject.text.body;
+        const userText = messageObject.text.body.toLowerCase(); // Converte para minúsculas para facilitar a verificação
         console.log(`Texto recebido do usuário ${from}: ${userText}`);
 
         if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
+        } else if (userFlows[from]?.status === 'cart') {
+            // Verificar resposta do usuário sobre continuar ou finalizar
+            if (userText === 'continuar') {
+                startBuyFlow(phone_number_id, from, res);
+            } else if (userText === 'finalizar') {
+                showCart(phone_number_id, from, res); // Mostra o carrinho para confirmação final
+            } else {
+                sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
+            }
         } else if (!userFlows[from]) {
-            sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
-                { id: 'buy', title: 'Comprar medicamentos' },
-                { id: 'login', title: 'Entrar em sua conta' },
-                { id: 'register', title: 'Se registrar' },
-            ]);
+            sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res);
         } else {
             res.sendStatus(200);
         }
-    } else {
-        res.sendStatus(200);
     }
+
 };
 
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
@@ -110,18 +114,17 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         if (!userFlows[from].cart) userFlows[from].cart = [];
         userFlows[from].cart.push(product);
 
-        userFlows[from].status = 'cart'; // Garanta que o status está definido
+        userFlows[from].status = 'cart';
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
-        sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia2, como podemos te ajudar hoje?', res, [
-            { id: 'buy', title: 'Comprar medicamentos' }, // aqui
-            { id: 'login', title: 'Entrar em sua conta' },
-        ]);
+        // Enviar uma pergunta direta ao usuário
+        sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra? Responda com "continuar" ou "finalizar".', res);
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
     }
 };
+
 
 // Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
