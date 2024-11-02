@@ -83,10 +83,16 @@ exports.handleMessage = (req, res) => {
                 sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
             }
         } else if (!userFlows[from]) {
+            const id1 = 'buy'
+            const id2 = 'login'
+            const id3 = 'register'
+            const welcomeText1 = 'Comprar medicamentos'
+            const welcomeText2 = 'Entrar em sua conta'
+            const welcomeText3 = 'Se registrar'
             sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
-                { id: 'buy', title: 'Comprar medicamentos' },
-                { id: 'login', title: 'Entrar em sua conta' },
-                { id: 'register', title: 'Se registrar' },
+                { id: `${id1}`, title: `${welcomeText1}` },
+                { id: `${id2}`, title: `${welcomeText2}` },
+                { id: `${id3}`, title: `${welcomeText3}` },
             ]);
         } else {
             res.sendStatus(200);
@@ -106,7 +112,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
             [productId]
         );
 
-        console.log('Resposta do banco de dados:', rows);
+        console.log('Resposta do banco de dados:', rows); l
 
         if (rows.length === 0) {
             console.log(`Produto não encontrado para o ID: ${productId}`);
@@ -123,6 +129,17 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
         // Pergunta direta ao usuário se deseja continuar ou finalizar a compra
         sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra? Responda com "continuar" ou "finalizar".', res);
+        const id1 = 'continuar'
+        const id2 = 'finalizar'
+        const id3 = ''
+        const welcomeText1 = 'continuar'
+        const welcomeText2 = 'finalizar'
+        const welcomeText3 = ''
+        sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
+            { id: `${id1}`, title: `${welcomeText1}` },
+            { id: `${id2}`, title: `${welcomeText2}` },
+            { id: `${id3}`, title: `${welcomeText3}` },
+        ]);
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
