@@ -37,7 +37,7 @@ exports.handleMessage = (req, res) => {
         handleButtonResponse(phone_number_id, from, buttonResponse, res);
     } else if (messageObject.interactive?.type === 'list_reply') {
         const selectedProductId = messageObject.interactive.list_reply.id;
-        handleListResponse(phone_number_id, from, selectedProductId, res);
+        handleListResponse(phone_number_id, from, selectedProductId, res); // Corrigido: função adicionada
     } else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase();
         handleTextResponse(phone_number_id, from, userText, res);
@@ -65,6 +65,12 @@ const handleButtonResponse = (phone_number_id, from, buttonResponse, res) => {
         default:
             res.sendStatus(200);
     }
+};
+
+// Tratamento das respostas de lista (definido)
+const handleListResponse = (phone_number_id, from, selectedProductId, res) => {
+    userFlows[from].status = 'cart';
+    addToCart(phone_number_id, from, selectedProductId, res);
 };
 
 // Início da seleção de categorias com lista
@@ -221,5 +227,5 @@ const confirmPurchase = (phone_number_id, from, res) => {
     const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! O valor total é R$${total}. Obrigado por comprar conosco!`, res);
 
-    userFlows[from] = { status: 'initial' }; // Resetar o fluxo do usuário
+    userFlows[from] = { status: 'initial' };
 };
