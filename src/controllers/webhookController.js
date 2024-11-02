@@ -129,8 +129,8 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
         // Pergunta direta ao usuário se deseja continuar ou finalizar a compra
         sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra? Responda com "continuar" ou "finalizar".', res);
-        const id1 = 'continuar'
-        const id2 = 'finalizar'
+        const id1 = 'buy'
+        const id2 = 'checkout'
         const id3 = ''
         const welcomeText1 = 'continuar'
         const welcomeText2 = 'finalizar'
