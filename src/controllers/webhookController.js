@@ -210,6 +210,7 @@ const confirmPurchase = (phone_number_id, from, res) => {
     delete userFlows[from];
 };
 
+
 // Processar a solicitação de compra e mostrar produtos
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
