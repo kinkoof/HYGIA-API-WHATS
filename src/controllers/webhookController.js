@@ -39,24 +39,18 @@ exports.handleMessage = (req, res) => {
         const buttonResponse = messageObject.interactive.button_reply.id;
         console.log(`Interação do usuário ${from}: ${buttonResponse}`);
 
-        switch (buttonResponse) {
-            case 'register':
-                sendRegisterLink(phone_number_id, from, res);
-                break;
-            case 'login':
-                sendLoginLink(phone_number_id, from, res);
-                break;
-            case 'buy':
-                startBuyFlow(phone_number_id, from, res);
-                break;
-            case 'checkout':
-                showCart(phone_number_id, from, res);
-                break;
-            case 'confirm_purchase':
-                confirmPurchase(phone_number_id, from, res);
-                break;
-            default:
-                res.sendStatus(200);
+        if (buttonResponse === 'register') {
+            sendRegisterLink(phone_number_id, from, res);
+        } else if (buttonResponse === 'login') {
+            sendLoginLink(phone_number_id, from, res);
+        } else if (buttonResponse === 'buy') {
+            startBuyFlow(phone_number_id, from, res);
+        } else if (buttonResponse === 'checkout') {
+            showCart(phone_number_id, from, res);
+        } else if (buttonResponse === 'confirm_purchase') {
+            confirmPurchase(phone_number_id, from, res);
+        } else {
+            res.sendStatus(200);
         }
     }
     // Verificação se é uma resposta de lista
@@ -72,28 +66,23 @@ exports.handleMessage = (req, res) => {
     }
     else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase();
-        handleTextMessage(phone_number_id, from, userText, res);
-    } else {
-        res.sendStatus(200);
-    }
-};
+        // console.log(`Texto recebido do usuário ${from}: ${userText}`);
 
-// Lógica para mensagens de texto
-const handleTextMessage = (phone_number_id, from, userText, res) => {
-    if (userFlows[from]?.status === 'awaiting_product') {
-        processBuyRequest(phone_number_id, from, userText, res);
-    } else if (userFlows[from]?.status === 'cart') {
-        if (userText === 'continuar') {
-            startBuyFlow(phone_number_id, from, res);
-        } else if (userText === 'finalizar') {
-            showCart(phone_number_id, from, res);
+        if (userFlows[from]?.status === 'awaiting_product') {
+            processBuyRequest(phone_number_id, from, userText, res);
+        } else if (userFlows[from]?.status === 'cart') {
+            if (userText === 'continuar') {
+                startBuyFlow(phone_number_id, from, res);
+            } else if (userText === 'finalizar') {
+                showCart(phone_number_id, from, res);
+            } else {
+                sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
+            }
+        } else if (!userFlows[from]) {
+            sendWelcomeOptions(phone_number_id, from, res);
         } else {
-            sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
+            res.sendStatus(200);
         }
-    } else if (!userFlows[from]) {
-        sendWelcomeOptions(phone_number_id, from, res);
-    } else {
-        res.sendStatus(200);
     }
 };
 
@@ -106,9 +95,11 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Hygia');
 };
 
-// Adicionar ao carrinho
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
+    console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
     const productId = selectedProductId.replace('product_', '');
+
+    // Garante que o estado de fluxo do usuário exista e o carrinho esteja inicializado
     if (!userFlows[from]) {
         userFlows[from] = { status: 'awaiting_product', cart: [] };
     } else if (!userFlows[from].cart) {
@@ -116,21 +107,29 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     }
 
     try {
-        const [rows] = await db.execute(`SELECT id, name, price FROM products WHERE id = ?`, [productId]);
+        const [rows] = await db.execute(
+            `SELECT id, name, price FROM products WHERE id = ?`,
+            [productId]
+        );
 
         if (rows.length === 0) {
+            console.log(`Produto não encontrado para o ID: ${productId}`);
             sendWhatsAppMessage(phone_number_id, from, 'Produto não encontrado.', res);
             return;
         }
 
         const product = rows[0];
+
+        // Adiciona o produto ao carrinho do usuário
         userFlows[from].cart.push(product);
+
         userFlows[from].status = 'cart';
+        console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
         sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra?', res, [
             { id: 'buy', title: 'Continuar comprando' },
             { id: 'checkout', title: 'Finalizar compra' }
-        ], false, 'Produto adicionado ao carrinho');
+        ], false, `${selectedProductId} adicionado ao Carrinho`);
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
@@ -139,13 +138,14 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
 // Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_product', cart: [] };
+    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
-// Mostrar o carrinho
+// Mostrar o carrinho e opção para finalizar a compra
 const showCart = (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
+
     if (!cart || cart.length === 0) {
         sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
         return;
@@ -154,45 +154,55 @@ const showCart = (phone_number_id, from, res) => {
     const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${item.price.toFixed(2)}`).join('\n');
     const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
 
-    sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res);
-    sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra?', res, [
+    // Em seguida, envia a mensagem com os botões
+    sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
         { id: 'buy', title: 'Continuar comprando' },
         { id: 'confirm_purchase', title: 'Finalizar compra' }
     ], false, 'Hygia');
 };
 
-// Confirmar a compra
+// Confirmar e finalizar a compra
 const confirmPurchase = (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
+
     if (!cart || cart.length === 0) {
         sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
         return;
     }
 
     const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+
     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
 
+    // Limpa o carrinho após a compra
     delete userFlows[from];
 };
 
-// Processar a solicitação de compra
+// Processar a solicitação de compra e mostrar produtos
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
-        const [rows] = await db.execute(`SELECT id, name, price FROM products WHERE name LIKE ?`, [`%${productName}%`]);
+        const [rows] = await db.execute(
+            `SELECT p.id, p.name, p.price
+            FROM products p
+            WHERE p.name LIKE ?`,
+            [`%${productName}%`]
+        );
 
         if (rows.length === 0) {
             sendWhatsAppMessage(phone_number_id, from, `Nenhum produto encontrado com o nome "${productName}".`, res);
             return;
         }
 
-        const listSections = [{
-            title: 'Produtos Encontrados',
-            rows: rows.map((product) => ({
-                id: `product_${product.id}`,
-                title: product.name,
-                description: `R$${product.price.toFixed(2)}`
-            }))
-        }];
+        const listSections = [
+            {
+                title: 'Produtos Encontrados',
+                rows: rows.map((product) => ({
+                    id: `product_${product.id}`,
+                    title: product.name,
+                    description: `R$${product.price.toFixed(2)}`
+                }))
+            }
+        ];
 
         const listData = {
             headerText: 'Produtos Disponíveis',
