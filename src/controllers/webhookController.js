@@ -155,10 +155,23 @@ const showCart = (phone_number_id, from, res) => {
 };
 
 // Iniciar fluxo de compra
+// Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
+    // Verifica se o usuário não está em um fluxo de compra
+    if (!userFlows[from] || userFlows[from].status !== 'awaiting_product') {
+        userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio apenas se não houver fluxo ativo
+    }
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
+
+// Verificar o fluxo quando "Continuar comprando" é clicado
+if (userFlows[from]?.status === 'cart') {
+    // Se já estiver no estado de 'cart', não redefina, apenas continue.
+    sendWhatsAppMessage(phone_number_id, from, 'Você pode continuar comprando! Por favor, informe o nome do produto que deseja.', res);
+} else if (userText === 'continuar') {
+    startBuyFlow(phone_number_id, from, res);
+}
+
 
 // Confirmar e finalizar a compra
 const confirmPurchase = (phone_number_id, from, res) => {
