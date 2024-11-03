@@ -17,6 +17,12 @@ exports.verifyWebhook = (req, res) => {
     res.status(400).send('Bad Request');
 };
 
+// Função para continuar comprando e mudar estado para 'awaiting_product'
+const continueShopping = (phone_number_id, from, res) => {
+    userFlows[from].status = 'awaiting_product'; // Atualiza o status para aguardar um novo produto
+    sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
+};
+
 // Tratamento das mensagens recebidas
 exports.handleMessage = (req, res) => {
     const body = req.body;
@@ -41,7 +47,7 @@ exports.handleMessage = (req, res) => {
 
         if (buttonResponse === 'buy') {
             if (userFlows[from]?.status === 'cart') {
-                sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
+                continueShopping(phone_number_id, from, res);
             } else {
                 startBuyFlow(phone_number_id, from, res);
             }
@@ -83,7 +89,7 @@ exports.handleMessage = (req, res) => {
             }
         } else if (userFlows[from]?.status === 'cart') {
             if (userText === 'continuar') {
-                sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
+                continueShopping(phone_number_id, from, res);
             } else if (userText === 'finalizar') {
                 showCart(phone_number_id, from, res);
             } else {
@@ -97,7 +103,6 @@ exports.handleMessage = (req, res) => {
 
 // Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
-    // Não inicializa o carrinho novamente, se já estiver no fluxo de compra
     if (!userFlows[from]) {
         userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
     }
@@ -117,7 +122,6 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
     const productId = selectedProductId.replace('product_', '');
 
-    // Inicializa o fluxo do usuário se não existir
     if (!userFlows[from]) {
         userFlows[from] = { status: 'awaiting_product', cart: [] };
     }
@@ -137,7 +141,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         const product = rows[0];
 
         // Adiciona o produto ao carrinho do usuário
-        userFlows[from].cart.push(product); // Isso mantém os produtos no carrinho
+        userFlows[from].cart.push(product);
 
         userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
