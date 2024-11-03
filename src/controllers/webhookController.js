@@ -1,21 +1,3 @@
-const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
-const db = require('../config/db');
-const userFlows = require('../state/userFlows');
-
-// Verificação do Webhook
-exports.verifyWebhook = (req, res) => {
-    const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
-
-    if (mode && token) {
-        if (mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
-            console.log('Webhook verified');
-            return res.status(200).send(challenge);
-        } else {
-            return res.status(403).send('Forbidden');
-        }
-    }
-    res.status(400).send('Bad Request');
-};
 
 // Tratamento das mensagens recebidas
 const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
