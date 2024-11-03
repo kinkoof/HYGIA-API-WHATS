@@ -102,8 +102,6 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     // Garante que o estado de fluxo do usuário exista e o carrinho esteja inicializado
     if (!userFlows[from]) {
         userFlows[from] = { status: 'awaiting_product', cart: [] };
-    } else if (!userFlows[from].cart) {
-        userFlows[from].cart = [];
     }
 
     try {
@@ -123,23 +121,17 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         // Adiciona o produto ao carrinho do usuário
         userFlows[from].cart.push(product);
 
-        userFlows[from].status = 'cart';
+        userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
-        sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra?', res, [
+        sendWhatsAppMessage(phone_number_id, from, `Produto ${product.name} adicionado ao carrinho. Deseja continuar comprando ou finalizar a compra?`, res, [
             { id: 'buy', title: 'Continuar comprando' },
             { id: 'checkout', title: 'Finalizar compra' }
-        ], false, `${selectedProductId} adicionado ao Carrinho`);
+        ], false, 'Carrinho Atualizado');
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
     }
-};
-
-// Iniciar fluxo de compra
-const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
-    sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
 // Mostrar o carrinho e opção para finalizar a compra
@@ -158,7 +150,13 @@ const showCart = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
         { id: 'buy', title: 'Continuar comprando' },
         { id: 'confirm_purchase', title: 'Finalizar compra' }
-    ], false, 'Hygia');
+    ], false, 'Resumo do Carrinho');
+};
+
+// Iniciar fluxo de compra
+const startBuyFlow = (phone_number_id, from, res) => {
+    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
 // Confirmar e finalizar a compra
