@@ -71,13 +71,15 @@ exports.handleMessage = (req, res) => {
         // Inicializa o fluxo do usuário se não existir
         if (!userFlows[from]) {
             userFlows[from] = { status: 'awaiting_product', cart: [] };
+            sendWelcomeOptions(phone_number_id, from, res); // Envia as opções de boas-vindas
+            return; // Sai da função para evitar qualquer processamento adicional
         }
 
         if (userFlows[from]?.status === 'awaiting_product') {
-            // Aqui, verificamos se o usuário está realmente tentando buscar um produto
             if (userText.trim() === '') {
                 sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
             } else {
+                // Processa a solicitação de compra se o usuário fornecer um nome de produto
                 processBuyRequest(phone_number_id, from, userText, res);
             }
         } else if (userFlows[from]?.status === 'cart') {
