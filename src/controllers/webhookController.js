@@ -66,7 +66,7 @@ exports.handleMessage = (req, res) => {
     }
     else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase();
-        console.log(`Texto recebido do usuário ${from}: ${userText}`);
+        // console.log(`Texto recebido do usuário ${from}: ${userText}`);
 
         if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
@@ -99,6 +99,13 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
     const productId = selectedProductId.replace('product_', '');
 
+    // Garante que o estado de fluxo do usuário exista e o carrinho esteja inicializado
+    if (!userFlows[from]) {
+        userFlows[from] = { status: 'awaiting_product', cart: [] };
+    } else if (!userFlows[from].cart) {
+        userFlows[from].cart = [];
+    }
+
     try {
         const [rows] = await db.execute(
             `SELECT id, name, price FROM products WHERE id = ?`,
@@ -112,7 +119,8 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         }
 
         const product = rows[0];
-        if (!userFlows[from].cart) userFlows[from].cart = [];
+
+        // Adiciona o produto ao carrinho do usuário
         userFlows[from].cart.push(product);
 
         userFlows[from].status = 'cart';
