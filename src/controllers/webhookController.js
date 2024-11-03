@@ -118,7 +118,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         userFlows[from].status = 'cart';
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
-        sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra? Responda com "continuar" ou "finalizar".', res, [
+        sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra?', res, [
             { id: 'buy', title: 'Continuar comprando' },
             { id: 'checkout', title: 'Finalizar compra' }
         ]);
@@ -146,9 +146,13 @@ const showCart = (phone_number_id, from, res) => {
     const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${item.price.toFixed(2)}`).join('\n');
     const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
 
-    sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
-        { id: 'confirm_purchase', title: 'Confirmar Compra' },
-        { id: 'buy', title: 'Adicionar mais produtos' }
+    // Primeiro, envia o resumo do carrinho
+    sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res);
+
+    // Em seguida, envia a mensagem com os botões
+    sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra?', res, [
+        { id: 'buy', title: 'Continuar comprando' },
+        { id: 'confirm_purchase', title: 'Finalizar compra' }
     ]);
 };
 
