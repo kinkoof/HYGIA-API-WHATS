@@ -39,14 +39,10 @@ exports.handleMessage = (req, res) => {
         const buttonResponse = messageObject.interactive.button_reply.id;
         console.log(`Interação do usuário ${from}: ${buttonResponse}`);
 
-        if (buttonResponse === 'register') {
-            sendRegisterLink(phone_number_id, from, res);
-        } else if (buttonResponse === 'login') {
-            sendLoginLink(phone_number_id, from, res);
-        } else if (buttonResponse === 'buy') {
-            // Se o usuário já estiver no fluxo de compra, apenas avisa
-            if (userFlows[from]?.status === 'cart' || userFlows[from]?.status === 'awaiting_product') {
-                sendWhatsAppMessage(phone_number_id, from, 'Você já está no processo de compra. Por favor, informe o nome do produto que deseja adicionar ao carrinho.', res);
+        if (buttonResponse === 'buy') {
+            // Se o usuário já estiver no fluxo de compra, não reinicie o fluxo
+            if (userFlows[from]?.status === 'cart') {
+                sendWhatsAppMessage(phone_number_id, from, 'Você está no processo de compra. Por favor, informe o nome do produto que deseja adicionar ao carrinho.', res);
             } else {
                 startBuyFlow(phone_number_id, from, res);
             }
@@ -58,6 +54,7 @@ exports.handleMessage = (req, res) => {
             res.sendStatus(200);
         }
     }
+
     // Verificação se é uma resposta de lista
     else if (messageObject.interactive?.type === 'list_reply') {
         const selectedProductId = messageObject.interactive.list_reply.id;
