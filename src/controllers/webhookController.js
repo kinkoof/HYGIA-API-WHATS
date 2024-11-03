@@ -44,8 +44,8 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'login') {
             sendLoginLink(phone_number_id, from, res);
         } else if (buttonResponse === 'buy') {
-            // Se o usuário já estiver no fluxo de compra, só envia uma mensagem
-            if (userFlows[from]?.status === 'cart') {
+            // Se o usuário já estiver no fluxo de compra, apenas avisa
+            if (userFlows[from]?.status === 'cart' || userFlows[from]?.status === 'awaiting_product') {
                 sendWhatsAppMessage(phone_number_id, from, 'Você já está no processo de compra. Por favor, informe o nome do produto que deseja adicionar ao carrinho.', res);
             } else {
                 startBuyFlow(phone_number_id, from, res);
@@ -101,6 +101,14 @@ exports.handleMessage = (req, res) => {
     }
 };
 
+// Iniciar fluxo de compra
+const startBuyFlow = (phone_number_id, from, res) => {
+    // Não inicializa o carrinho novamente, se já estiver no fluxo de compra
+    if (!userFlows[from]) {
+        userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
+    }
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
+};
 
 // Função para enviar opções de boas-vindas
 const sendWelcomeOptions = (phone_number_id, from, res) => {
@@ -167,12 +175,6 @@ const showCart = (phone_number_id, from, res) => {
         { id: 'buy', title: 'Continuar comprando' },
         { id: 'confirm_purchase', title: 'Finalizar compra' }
     ], false, 'Resumo do Carrinho');
-};
-
-// Iniciar fluxo de compra
-const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
-    sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
 // Confirmar e finalizar a compra
