@@ -58,48 +58,41 @@ exports.handleMessage = (req, res) => {
         const selectedProductId = messageObject.interactive.list_reply.id;
         console.log(`Produto selecionado pelo usuário ${from}: ${selectedProductId}`);
 
-        // Atualizar o status do usuário para 'cart'
-        userFlows[from].status = 'cart';
-
-        if (userFlows[from]?.status === 'cart') {
+        if (userFlows[from]?.status === 'awaiting_product') {
             addToCart(phone_number_id, from, selectedProductId, res);
         } else {
-            sendWhatsAppMessage(phone_number_id, from, 'Por favor, selecione um produto da lista após iniciar uma compra.', res);
+            sendWhatsAppMessage(phone_number_id, from, 'Por favor, inicie uma compra para selecionar um produto.', res);
         }
     }
     else if (messageObject.text) {
-        const userText = messageObject.text.body.toLowerCase(); // Converte para minúsculas para facilitar a verificação
+        const userText = messageObject.text.body.toLowerCase();
         console.log(`Texto recebido do usuário ${from}: ${userText}`);
 
         if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
         } else if (userFlows[from]?.status === 'cart') {
-            // Verificar resposta do usuário sobre continuar ou finalizar
             if (userText === 'continuar') {
                 startBuyFlow(phone_number_id, from, res);
             } else if (userText === 'finalizar') {
-                showCart(phone_number_id, from, res); // Mostra o carrinho para confirmação final
+                showCart(phone_number_id, from, res);
             } else {
                 sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
             }
         } else if (!userFlows[from]) {
-            const id1 = 'buy'
-            const id2 = 'login'
-            const id3 = 'register'
-            const welcomeText1 = 'Comprar medicamentos'
-            const welcomeText2 = 'Entrar em sua conta'
-            const welcomeText3 = 'Se registrar'
-            sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
-                { id: `${id1}`, title: `${welcomeText1}` },
-                { id: `${id2}`, title: `${welcomeText2}` },
-                { id: `${id3}`, title: `${welcomeText3}` },
-            ]);
+            sendWelcomeOptions(phone_number_id, from, res);
         } else {
             res.sendStatus(200);
         }
     }
+};
 
-
+// Função para enviar opções de boas-vindas
+const sendWelcomeOptions = (phone_number_id, from, res) => {
+    sendWhatsAppMessage(phone_number_id, from, 'Bem-vindo ao Hygia, como podemos te ajudar hoje?', res, [
+        { id: 'buy', title: 'Comprar medicamentos' },
+        { id: 'login', title: 'Entrar em sua conta' },
+        { id: 'register', title: 'Se registrar' }
+    ]);
 };
 
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
@@ -111,8 +104,6 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
             `SELECT id, name, price FROM products WHERE id = ?`,
             [productId]
         );
-
-        console.log('Resposta do banco de dados:', rows); l
 
         if (rows.length === 0) {
             console.log(`Produto não encontrado para o ID: ${productId}`);
@@ -127,18 +118,9 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         userFlows[from].status = 'cart';
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
-        // Pergunta direta ao usuário se deseja continuar ou finalizar a compra
-        sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra? Responda com "continuar" ou "finalizar".', res);
-        const id1 = 'buy'
-        const id2 = 'checkout'
-        const id3 = ''
-        const welcomeText1 = 'continuar'
-        const welcomeText2 = 'finalizar'
-        const welcomeText3 = ''
-        sendWhatsAppMessage(phone_number_id, from, 'Bem vindo ao Hygia, como podemos te ajudar hoje?', res, [
-            { id: `${id1}`, title: `${welcomeText1}` },
-            { id: `${id2}`, title: `${welcomeText2}` },
-            { id: `${id3}`, title: `${welcomeText3}` },
+        sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra? Responda com "continuar" ou "finalizar".', res, [
+            { id: 'buy', title: 'Continuar comprando' },
+            { id: 'checkout', title: 'Finalizar compra' }
         ]);
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
