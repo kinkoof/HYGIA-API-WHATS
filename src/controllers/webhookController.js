@@ -101,7 +101,9 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
     // Garante que o estado de fluxo do usuário exista e o carrinho esteja inicializado
     if (!userFlows[from]) {
-        userFlows[from] = { status: 'awaiting_product', cart: [] };
+        userFlows[from] = { status: 'cart', cart: [] }; // Inicializa o carrinho vazio
+    } else if (!userFlows[from].cart) {
+        userFlows[from].cart = []; // Garante que o carrinho existe
     }
 
     try {
@@ -121,7 +123,6 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         // Adiciona o produto ao carrinho do usuário
         userFlows[from].cart.push(product);
 
-        userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
         sendWhatsAppMessage(phone_number_id, from, `Produto ${product.name} adicionado ao carrinho. Deseja continuar comprando ou finalizar a compra?`, res, [
