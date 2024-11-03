@@ -40,9 +40,8 @@ exports.handleMessage = (req, res) => {
         console.log(`Interação do usuário ${from}: ${buttonResponse}`);
 
         if (buttonResponse === 'buy') {
-            // Se o usuário já estiver no fluxo de compra, confirma que ele pode continuar
             if (userFlows[from]?.status === 'cart') {
-                sendWhatsAppMessage(phone_number_id, from, 'Você está no processo de compra. Por favor, informe o nome do produto que deseja adicionar ao carrinho.', res);
+                sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
             } else {
                 startBuyFlow(phone_number_id, from, res);
             }
@@ -53,38 +52,7 @@ exports.handleMessage = (req, res) => {
         } else {
             res.sendStatus(200);
         }
-    } else if (messageObject.text) {
-        const userText = messageObject.text.body.toLowerCase();
-
-        // Inicializa o fluxo do usuário se não existir
-        if (!userFlows[from]) {
-            userFlows[from] = { status: 'awaiting_product', cart: [] };
-            sendWelcomeOptions(phone_number_id, from, res); // Envia as opções de boas-vindas
-            return; // Sai da função para evitar qualquer processamento adicional
-        }
-
-        if (userFlows[from]?.status === 'awaiting_product') {
-            if (userText.trim() === '') {
-                sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
-            } else {
-                // Processa a solicitação de compra se o usuário fornecer um nome de produto
-                processBuyRequest(phone_number_id, from, userText, res);
-            }
-        } else if (userFlows[from]?.status === 'cart') {
-            // Aqui verificamos a resposta do usuário na fase do carrinho
-            if (userText === 'continuar') {
-                sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
-                // Permite que o usuário continue no mesmo estado sem pedir o nome novamente
-            } else if (userText === 'finalizar') {
-                showCart(phone_number_id, from, res);
-            } else {
-                sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
-            }
-        } else {
-            sendWelcomeOptions(phone_number_id, from, res);
-        }
     }
-
     // Verificação se é uma resposta de lista
     else if (messageObject.interactive?.type === 'list_reply') {
         const selectedProductId = messageObject.interactive.list_reply.id;
@@ -103,15 +71,14 @@ exports.handleMessage = (req, res) => {
         // Inicializa o fluxo do usuário se não existir
         if (!userFlows[from]) {
             userFlows[from] = { status: 'awaiting_product', cart: [] };
-            sendWelcomeOptions(phone_number_id, from, res); // Envia as opções de boas-vindas
-            return; // Sai da função para evitar qualquer processamento adicional
+            sendWelcomeOptions(phone_number_id, from, res);
+            return;
         }
 
         if (userFlows[from]?.status === 'awaiting_product') {
             if (userText.trim() === '') {
                 sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
             } else {
-                // Processa a solicitação de compra se o usuário fornecer um nome de produto
                 processBuyRequest(phone_number_id, from, userText, res);
             }
         } else if (userFlows[from]?.status === 'cart') {
@@ -197,7 +164,6 @@ const showCart = (phone_number_id, from, res) => {
     const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${item.price.toFixed(2)}`).join('\n');
     const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
 
-    // Em seguida, envia a mensagem com os botões
     sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
         { id: 'buy', title: 'Continuar comprando' },
         { id: 'confirm_purchase', title: 'Finalizar compra' }
