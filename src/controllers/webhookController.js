@@ -44,7 +44,12 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'login') {
             sendLoginLink(phone_number_id, from, res);
         } else if (buttonResponse === 'buy') {
-            startBuyFlow(phone_number_id, from, res);
+            // Se o usuário já estiver no fluxo de compra, só envia uma mensagem
+            if (userFlows[from]?.status === 'cart') {
+                sendWhatsAppMessage(phone_number_id, from, 'Você já está no processo de compra. Por favor, informe o nome do produto que deseja adicionar ao carrinho.', res);
+            } else {
+                startBuyFlow(phone_number_id, from, res);
+            }
         } else if (buttonResponse === 'checkout') {
             showCart(phone_number_id, from, res);
         } else if (buttonResponse === 'confirm_purchase') {
@@ -95,6 +100,7 @@ exports.handleMessage = (req, res) => {
         }
     }
 };
+
 
 // Função para enviar opções de boas-vindas
 const sendWelcomeOptions = (phone_number_id, from, res) => {
