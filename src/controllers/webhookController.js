@@ -18,7 +18,6 @@ exports.verifyWebhook = (req, res) => {
 };
 
 // Tratamento das mensagens recebidas
-// Tratamento das mensagens recebidas
 exports.handleMessage = (req, res) => {
     const body = req.body;
     const entry = body.entry?.[0]?.changes?.[0]?.value;
