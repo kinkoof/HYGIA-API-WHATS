@@ -67,7 +67,6 @@ exports.handleMessage = (req, res) => {
     // Verificação de mensagens de texto
     else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase();
-        // console.log(`Texto recebido do usuário ${from}: ${userText}`);
 
         // Inicializa o fluxo do usuário se não existir
         if (!userFlows[from]) {
@@ -78,7 +77,8 @@ exports.handleMessage = (req, res) => {
             processBuyRequest(phone_number_id, from, userText, res);
         } else if (userFlows[from]?.status === 'cart') {
             if (userText === 'continuar') {
-                startBuyFlow(phone_number_id, from, res);
+                sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
+                // Não redefina o fluxo
             } else if (userText === 'finalizar') {
                 showCart(phone_number_id, from, res);
             } else {
