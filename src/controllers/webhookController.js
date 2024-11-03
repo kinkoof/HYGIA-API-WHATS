@@ -18,6 +18,7 @@ exports.verifyWebhook = (req, res) => {
 };
 
 // Tratamento das mensagens recebidas
+// Tratamento das mensagens recebidas
 exports.handleMessage = (req, res) => {
     const body = req.body;
     const entry = body.entry?.[0]?.changes?.[0]?.value;
@@ -74,11 +75,15 @@ exports.handleMessage = (req, res) => {
         }
 
         if (userFlows[from]?.status === 'awaiting_product') {
-            processBuyRequest(phone_number_id, from, userText, res);
+            // Aqui, verificamos se o usuário está realmente tentando buscar um produto
+            if (userText.trim() === '') {
+                sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
+            } else {
+                processBuyRequest(phone_number_id, from, userText, res);
+            }
         } else if (userFlows[from]?.status === 'cart') {
             if (userText === 'continuar') {
                 sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
-                // Não redefina o fluxo
             } else if (userText === 'finalizar') {
                 showCart(phone_number_id, from, res);
             } else {
