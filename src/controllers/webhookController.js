@@ -92,7 +92,7 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
         { id: 'buy', title: 'Comprar medicamentos' },
         { id: 'login', title: 'Entrar em sua conta' },
         { id: 'register', title: 'Se registrar' }
-    ]);
+    ], false, 'Bem-vindo ao Hygia');
 };
 
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
@@ -121,7 +121,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra?', res, [
             { id: 'buy', title: 'Continuar comprando' },
             { id: 'checkout', title: 'Finalizar compra' }
-        ]);
+        ], false, 'Hygia');
     } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
@@ -150,10 +150,10 @@ const showCart = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res);
 
     // Em seguida, envia a mensagem com os botões
-    sendWhatsAppMessage(phone_number_id, from, 'Deseja continuar comprando ou finalizar a compra?', res, [
+    sendWhatsAppMessage(phone_number_id, from, 'Verifique seu carrinho de Compras', res, [
         { id: 'buy', title: 'Continuar comprando' },
         { id: 'confirm_purchase', title: 'Finalizar compra' }
-    ]);
+    ], false, 'Hygia');
 };
 
 // Confirmar e finalizar a compra

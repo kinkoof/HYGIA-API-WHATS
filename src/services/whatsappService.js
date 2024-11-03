@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { ACCESS_TOKEN } = require('../config/config');
 
-const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isLocationRequest = false) => {
+const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isLocationRequest = false, headerText = 'Hygia') => {
     let messageData;
 
     if (isLocationRequest) {
@@ -29,7 +29,7 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isL
             ...(buttons ? {
                 interactive: {
                     type: 'button',
-                    header: { type: 'text', text: 'Bem Vindo' },
+                    header: { type: 'text', text: headerText },  // Use headerText parameter here
                     body: { text },
                     action: { buttons: buttons.map(button => ({ type: 'reply', reply: button })) }
                 }
@@ -46,6 +46,9 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isL
             res.sendStatus(500);
         });
 };
+
+module.exports = { sendWhatsAppMessage };
+
 
 const sendWhatsAppList = (phone_number_id, to, listData, res) => {
     const messageData = {
