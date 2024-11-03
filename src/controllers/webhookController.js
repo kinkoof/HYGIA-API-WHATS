@@ -64,9 +64,15 @@ exports.handleMessage = (req, res) => {
             sendWhatsAppMessage(phone_number_id, from, 'Por favor, inicie uma compra para selecionar um produto.', res);
         }
     }
+    // Verificação de mensagens de texto
     else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase();
         // console.log(`Texto recebido do usuário ${from}: ${userText}`);
+
+        // Inicializa o fluxo do usuário se não existir
+        if (!userFlows[from]) {
+            userFlows[from] = { status: 'awaiting_product', cart: [] };
+        }
 
         if (userFlows[from]?.status === 'awaiting_product') {
             processBuyRequest(phone_number_id, from, userText, res);
@@ -78,10 +84,8 @@ exports.handleMessage = (req, res) => {
             } else {
                 sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
             }
-        } else if (!userFlows[from]) {
-            sendWelcomeOptions(phone_number_id, from, res);
         } else {
-            res.sendStatus(200);
+            sendWelcomeOptions(phone_number_id, from, res);
         }
     }
 };
@@ -99,11 +103,9 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
     const productId = selectedProductId.replace('product_', '');
 
-    // Garante que o estado de fluxo do usuário exista e o carrinho esteja inicializado
+    // Inicializa o fluxo do usuário se não existir
     if (!userFlows[from]) {
-        userFlows[from] = { status: 'cart', cart: [] }; // Inicializa o carrinho vazio
-    } else if (!userFlows[from].cart) {
-        userFlows[from].cart = []; // Garante que o carrinho existe
+        userFlows[from] = { status: 'awaiting_product', cart: [] };
     }
 
     try {
@@ -121,8 +123,9 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
         const product = rows[0];
 
         // Adiciona o produto ao carrinho do usuário
-        userFlows[from].cart.push(product);
+        userFlows[from].cart.push(product); // Isso mantém os produtos no carrinho
 
+        userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
 
         sendWhatsAppMessage(phone_number_id, from, `Produto ${product.name} adicionado ao carrinho. Deseja continuar comprando ou finalizar a compra?`, res, [
@@ -155,23 +158,10 @@ const showCart = (phone_number_id, from, res) => {
 };
 
 // Iniciar fluxo de compra
-// Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
-    // Verifica se o usuário não está em um fluxo de compra
-    if (!userFlows[from] || userFlows[from].status !== 'awaiting_product') {
-        userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio apenas se não houver fluxo ativo
-    }
+    userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
-
-// Verificar o fluxo quando "Continuar comprando" é clicado
-if (userFlows[from]?.status === 'cart') {
-    // Se já estiver no estado de 'cart', não redefina, apenas continue.
-    sendWhatsAppMessage(phone_number_id, from, 'Você pode continuar comprando! Por favor, informe o nome do produto que deseja.', res);
-} else if (userText === 'continuar') {
-    startBuyFlow(phone_number_id, from, res);
-}
-
 
 // Confirmar e finalizar a compra
 const confirmPurchase = (phone_number_id, from, res) => {
