@@ -12,7 +12,7 @@ exports.getPharmacyProfile = async (req, res) => {
 
     try {
         // Consulta para obter as informações da farmácia pelo userId
-        const [rows] = await db.execute('SELECT * FROM pharmacy WHERE id = ?', [userId]);
+        const [rows] = await db.execute('SELECT * FROM pharmacys WHERE id = ?', [userId]);
 
         // Verifica se encontrou a farmácia
         if (rows.length === 0) {

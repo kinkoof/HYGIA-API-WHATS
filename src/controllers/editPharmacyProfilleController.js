@@ -56,7 +56,7 @@ exports.editPharmacyProfile = async (req, res) => {
     }
 
     try {
-        const query = `UPDATE pharmacy SET ${fieldNames.map(field => `${field} = ?`).join(', ')}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`;
+        const query = `UPDATE pharmacys SET ${fieldNames.map(field => `${field} = ?`).join(', ')}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`;
         fieldValues.push(userId);
         await db.execute(query, fieldValues);
 

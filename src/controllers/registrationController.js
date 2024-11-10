@@ -37,7 +37,7 @@ exports.registerUser = async (req, res) => {
     }
 
     try {
-        const [rows] = await db.execute('SELECT * FROM pharmacy WHERE email = ? OR cnpj = ?', [email, cnpj]);
+        const [rows] = await db.execute('SELECT * FROM pharmacys WHERE email = ? OR cnpj = ?', [email, cnpj]);
         if (rows.length > 0) {
             return res.status(400).json({ message: 'O e-mail ou CNPJ já estão registrados.' });
         }
@@ -45,7 +45,7 @@ exports.registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await db.execute(
-            `INSERT INTO pharmacy
+            `INSERT INTO pharmacys
             (pharmacyName, cnpj, email, password, phone, street, neighborhood, city, state, number, cep, ownerName, ownerCpf, ownerPhone, ownerEmail, bankName, agencyNumber, accountNumber, accountHolder, document)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [

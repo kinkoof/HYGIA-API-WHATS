@@ -2,7 +2,6 @@ const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappS
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 
-// Verificação do Webhook
 exports.verifyWebhook = (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
 
@@ -15,12 +14,6 @@ exports.verifyWebhook = (req, res) => {
         }
     }
     res.status(400).send('Bad Request');
-};
-
-// Função para continuar comprando e mudar estado para 'awaiting_product'
-const continueShopping = (phone_number_id, from, res) => {
-    userFlows[from].status = 'awaiting_product'; // Atualiza o status para aguardar um novo produto
-    sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
 };
 
 // Tratamento das mensagens recebidas
@@ -40,7 +33,6 @@ exports.handleMessage = (req, res) => {
     console.log('Mensagem recebida:', messageObject);
     console.log('Estado do usuário:', userFlows[from]);
 
-    // Verificação se é uma resposta de botão
     if (messageObject.interactive?.type === 'button_reply') {
         const buttonResponse = messageObject.interactive.button_reply.id;
         console.log(`Interação do usuário ${from}: ${buttonResponse}`);
@@ -59,7 +51,6 @@ exports.handleMessage = (req, res) => {
             res.sendStatus(200);
         }
     }
-    // Verificação se é uma resposta de lista
     else if (messageObject.interactive?.type === 'list_reply') {
         const selectedProductId = messageObject.interactive.list_reply.id;
         console.log(`Produto selecionado pelo usuário ${from}: ${selectedProductId}`);
@@ -70,11 +61,9 @@ exports.handleMessage = (req, res) => {
             sendWhatsAppMessage(phone_number_id, from, 'Por favor, inicie uma compra para selecionar um produto.', res);
         }
     }
-    // Verificação de mensagens de texto
     else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase();
 
-        // Inicializa o fluxo do usuário se não existir
         if (!userFlows[from]) {
             userFlows[from] = { status: 'awaiting_product', cart: [] };
             sendWelcomeOptions(phone_number_id, from, res);
@@ -101,7 +90,6 @@ exports.handleMessage = (req, res) => {
     }
 };
 
-// Iniciar fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
     if (!userFlows[from]) {
         userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
@@ -109,7 +97,11 @@ const startBuyFlow = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
-// Função para enviar opções de boas-vindas
+const continueShopping = (phone_number_id, from, res) => {
+    userFlows[from].status = 'awaiting_product'; // Atualiza o status para aguardar um novo produto
+    sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
+};
+
 const sendWelcomeOptions = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, 'Bem-vindo ao Hygia, como podemos te ajudar hoje?', res, [
         { id: 'buy', title: 'Comprar medicamentos' },
@@ -156,7 +148,6 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     }
 };
 
-// Mostrar o carrinho e opção para finalizar a compra
 const showCart = (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
@@ -174,7 +165,6 @@ const showCart = (phone_number_id, from, res) => {
     ], false, 'Resumo do Carrinho');
 };
 
-// Confirmar e finalizar a compra
 const confirmPurchase = (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
@@ -191,7 +181,6 @@ const confirmPurchase = (phone_number_id, from, res) => {
     delete userFlows[from];
 };
 
-// Processar a solicitação de compra e mostrar produtos
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
         const [rows] = await db.execute(
@@ -231,13 +220,11 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
     }
 };
 
-// Enviar link de registro
 const sendRegisterLink = (phone_number_id, from, res) => {
     const registrationLink = 'https://hygia-front-whats.vercel.app/auth/register';
     sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
 };
 
-// Enviar link de login
 const sendLoginLink = (phone_number_id, from, res) => {
     const loginLink = 'https://hygia-front-whats.vercel.app/auth/login';
     sendWhatsAppMessage(phone_number_id, from, `Para fazer login, acesse o seguinte link: ${loginLink}`, res);

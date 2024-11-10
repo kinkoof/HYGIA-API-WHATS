@@ -12,7 +12,7 @@ exports.loginUser = async (req, res) => {
 
     try {
         // Buscando o usuário pelo e-mail no banco de dados
-        const [rows] = await db.execute('SELECT * FROM pharmacy WHERE email = ?', [email]);
+        const [rows] = await db.execute('SELECT * FROM pharmacys WHERE email = ?', [email]);
 
         // Verifica se o usuário foi encontrado
         if (rows.length === 0) {
@@ -25,7 +25,7 @@ exports.loginUser = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         // Verifica se a senha está correta
-        if (!isMatch) {
+        if (isMatch) {
             return res.status(400).json({ message: 'Senha incorreta.' });
         }
 
