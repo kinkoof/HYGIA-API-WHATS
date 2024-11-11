@@ -1,20 +1,19 @@
 const db = require('../config/db');
 
 exports.addProduct = async (req, res) => {
-    const { name, description, category_id, pharmacy_id, price, stock_quantity } = req.body;
+    const { name, category, pharmacy, price, prescription } = req.body;
 
-    // Verificação corrigida para `stock_quantity`
-    if (!name || !description || !category_id || !pharmacy_id || !price || !stock_quantity) {
+    if (!name || !category || !pharmacy || !price || !prescription) {
         return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
     }
 
     try {
         const query = `
             INSERT INTO products
-            (name, description, category_id, pharmacy_id, price, stock_quantity)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (name, category, pharmacy, price, prescription)
+            VALUES (?, ?, ?, ?, ?)
         `;
-        const values = [name, description, category_id, pharmacy_id, price, stock_quantity];
+        const values = [name, category, pharmacy, price, prescription];
 
         const [result] = await db.execute(query, values);
 
