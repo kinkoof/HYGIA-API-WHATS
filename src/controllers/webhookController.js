@@ -1,7 +1,9 @@
 const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
+const { createOrder } = require('../services/orderService'); // Supondo que você tenha uma função createOrder em um serviço separado
 
+// Verificação do webhook
 exports.verifyWebhook = (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
 
@@ -90,6 +92,7 @@ exports.handleMessage = (req, res) => {
     }
 };
 
+// Inicia o fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
     if (!userFlows[from]) {
         userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
@@ -97,11 +100,13 @@ const startBuyFlow = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
+// Continuação da compra
 const continueShopping = (phone_number_id, from, res) => {
     userFlows[from].status = 'awaiting_product'; // Atualiza o status para aguardar um novo produto
     sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
 };
 
+// Envia as opções de boas-vindas
 const sendWelcomeOptions = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, 'Bem-vindo ao Hygia, como podemos te ajudar hoje?', res, [
         { id: 'buy', title: 'Comprar medicamentos' },
@@ -110,6 +115,7 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Hygia');
 };
 
+// Adiciona produto ao carrinho
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
     const productId = selectedProductId.replace('product_', '');
@@ -148,6 +154,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     }
 };
 
+// Exibe o carrinho
 const showCart = (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
@@ -165,7 +172,8 @@ const showCart = (phone_number_id, from, res) => {
     ], false, 'Resumo do Carrinho');
 };
 
-const confirmPurchase = (phone_number_id, from, res) => {
+// Confirma a compra e cria o pedido
+const confirmPurchase = async (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
     if (!cart || cart.length === 0) {
@@ -174,13 +182,29 @@ const confirmPurchase = (phone_number_id, from, res) => {
     }
 
     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+    const pharmacyId = 1;
 
     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
+
+    const orderResult = await createOrder(from, pharmacyId, cart.map(item => ({
+        productId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: 1
+    })), total);
+
+    if (orderResult.success) {
+        console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
+    } else {
+        console.error('Erro ao criar pedido:', orderResult.error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+    }
 
     // Limpa o carrinho após a compra
     delete userFlows[from];
 };
 
+// Processa a requisição de compra
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
         const [rows] = await db.execute(
@@ -221,14 +245,4 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
         console.error('Erro ao consultar o banco de dados:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
-};
-
-const sendRegisterLink = (phone_number_id, from, res) => {
-    const registrationLink = 'https://hygia-front-whats.vercel.app/auth/register';
-    sendWhatsAppMessage(phone_number_id, from, `Para se registrar, acesse o seguinte link: ${registrationLink}`, res);
-};
-
-const sendLoginLink = (phone_number_id, from, res) => {
-    const loginLink = 'https://hygia-front-whats.vercel.app/auth/login';
-    sendWhatsAppMessage(phone_number_id, from, `Para fazer login, acesse o seguinte link: ${loginLink}`, res);
 };
