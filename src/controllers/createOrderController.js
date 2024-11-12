@@ -1,34 +1,37 @@
-exports.createOrder = async (userPhone, items, total) => {
+const db = require('../config/db');
+
+exports.createOrder = async (userId, pharmacyId, items, total) => {
+    if (!Array.isArray(items)) {
+        throw new Error("Os itens precisam ser um array.");
+    }
+
     try {
-        // Agrupa os itens por `pharmacy_id`
-        const itemsByPharmacy = items.reduce((acc, item) => {
-            if (!acc[item.pharmacyId]) acc[item.pharmacyId] = [];
-            acc[item.pharmacyId].push(item);
-            return acc;
-        }, {});
+        const orderItems = items.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity || 1
+        }));
 
-        const orderResults = [];
+        const orderTotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        // Cria uma ordem para cada farmácia
-        for (const pharmacyId in itemsByPharmacy) {
-            const pharmacyItems = itemsByPharmacy[pharmacyId];
-            const pharmacyTotal = pharmacyItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            const itemsJson = JSON.stringify(pharmacyItems);
+        const result = await db.execute(
+            `INSERT INTO orders (user_phone, pharmacy_id, total, items, status) VALUES (?, ?, ?, ?, ?)`,
+            [userId, pharmacyId, orderTotal, JSON.stringify(orderItems), 'w']  // Aqui armazenamos os itens como JSON
+        );
 
-            // Insere a ordem na tabela "orders" para a farmácia atual
-            const [orderResult] = await db.execute(
-                `INSERT INTO orders (user_phone, pharmacy_id, total, items, status) VALUES (?, ?, ?, ?, 'w')`,
-                [userPhone, pharmacyId, pharmacyTotal, itemsJson]
+        const orderId = result.insertId;
+
+        for (let item of orderItems) {
+            await db.execute(
+                `INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
+                [orderId, item.productId, item.quantity, item.price]
             );
-
-            const orderId = orderResult.insertId;
-            orderResults.push({ orderId, pharmacyId });
-            console.log(`Pedido criado com sucesso para o usuário ${userPhone} na farmácia ${pharmacyId}`);
         }
 
-        return { success: true, orderResults };
+        return { success: true, orderId };
     } catch (error) {
-        console.error('Erro ao criar pedidos:', error);
-        return { success: false, error };
+        console.error('Erro ao criar pedido:', error);
+        return { success: false, error: error.message };
     }
 };
