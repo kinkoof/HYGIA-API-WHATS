@@ -165,7 +165,7 @@ const showCart = (phone_number_id, from, res) => {
     ], false, 'Resumo do Carrinho');
 };
 
-const confirmPurchase = (phone_number_id, from, res) => {
+const confirmPurchase = async (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
     if (!cart || cart.length === 0) {
@@ -173,9 +173,41 @@ const confirmPurchase = (phone_number_id, from, res) => {
         return;
     }
 
-    const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+    // Agrupa itens por farmácia para gerar pedidos separados
+    const groupedItems = cart.reduce((acc, item) => {
+        if (!acc[item.pharmacy_id]) acc[item.pharmacy_id] = [];
+        acc[item.pharmacy_id].push(item);
+        return acc;
+    }, {});
 
-    sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
+    let totalGeral = 0;
+    const orderResults = [];
+
+    // Processa cada grupo de itens por farmácia e cria o pedido
+    for (const pharmacyId in groupedItems) {
+        const pharmacyItems = groupedItems[pharmacyId];
+        const total = pharmacyItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
+
+        totalGeral += parseFloat(total);
+
+        const orderResult = await createOrder(from, pharmacyItems, total);
+
+        if (orderResult.success) {
+            orderResults.push(`Farmácia ${pharmacyId}: Pedido ${orderResult.orderId} - Total: R$${total}`);
+        } else {
+            console.error('Erro ao criar pedido:', orderResult.error);
+            sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+            return;  // Encerra em caso de erro
+        }
+    }
+
+    // Envia confirmação de pedido consolidada
+    sendWhatsAppMessage(
+        phone_number_id,
+        from,
+        `Pedido confirmado! Detalhes:\n${orderResults.join('\n')}\nTotal geral: R$${totalGeral.toFixed(2)}. Obrigado por comprar conosco!`,
+        res
+    );
 
     // Limpa o carrinho após a compra
     delete userFlows[from];
@@ -201,7 +233,7 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
                 rows: rows.map((product) => ({
                     id: `product_${product.id}`,
                     title: product.name,
-                    description: `R$${product.price.toFixed(2)}`
+                    description: `R$${parseFloat(product.price).toFixed(2)}`  // Converte para número antes de usar toFixed
                 }))
             }
         ];
