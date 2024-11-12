@@ -120,7 +120,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
     try {
         const [rows] = await db.execute(
-            `SELECT id, name, price FROM products WHERE id = ?`,
+            `SELECT id, name, price, pharmacy_id FROM products WHERE id = ?`,
             [productId]
         );
 
@@ -132,8 +132,14 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
         const product = rows[0];
 
-        // Adiciona o produto ao carrinho do usuário
-        userFlows[from].cart.push(product);
+        // Adiciona o produto com `pharmacy_id` ao carrinho do usuário
+        userFlows[from].cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            pharmacy_id: product.pharmacy_id,
+            quantity: 1
+        });
 
         userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
@@ -165,7 +171,7 @@ const showCart = (phone_number_id, from, res) => {
     ], false, 'Resumo do Carrinho');
 };
 
-const confirmPurchase = (phone_number_id, from, res) => {
+const confirmPurchase = async (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
     if (!cart || cart.length === 0) {
@@ -173,9 +179,41 @@ const confirmPurchase = (phone_number_id, from, res) => {
         return;
     }
 
-    const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+    // Agrupa itens por farmácia para gerar pedidos separados
+    const groupedItems = cart.reduce((acc, item) => {
+        if (!acc[item.pharmacy_id]) acc[item.pharmacy_id] = [];
+        acc[item.pharmacy_id].push(item);
+        return acc;
+    }, {});
 
-    sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
+    let totalGeral = 0;
+    const orderResults = [];
+
+    // Processa cada grupo de itens por farmácia e cria o pedido
+    for (const pharmacyId in groupedItems) {
+        const pharmacyItems = groupedItems[pharmacyId];
+        const total = pharmacyItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
+
+        totalGeral += parseFloat(total);
+
+        const orderResult = await createOrder(from, pharmacyItems, total);
+
+        if (orderResult.success) {
+            orderResults.push(`Farmácia ${pharmacyId}: Pedido ${orderResult.orderId} - Total: R$${total}`);
+        } else {
+            console.error('Erro ao criar pedido:', orderResult.error);
+            sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+            return;  // Encerra em caso de erro
+        }
+    }
+
+    // Envia confirmação de pedido consolidada
+    sendWhatsAppMessage(
+        phone_number_id,
+        from,
+        `Pedido confirmado! Detalhes:\n${orderResults.join('\n')}\nTotal geral: R$${totalGeral.toFixed(2)}. Obrigado por comprar conosco!`,
+        res
+    );
 
     // Limpa o carrinho após a compra
     delete userFlows[from];
@@ -184,7 +222,7 @@ const confirmPurchase = (phone_number_id, from, res) => {
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
         const [rows] = await db.execute(
-            `SELECT p.id, p.name, p.price
+            `SELECT p.id, p.name, p.price, p.pharmacy_id
             FROM products p
             WHERE p.name LIKE ?`,
             [`%${productName}%`]
