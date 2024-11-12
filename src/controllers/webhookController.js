@@ -156,12 +156,8 @@ const showCart = (phone_number_id, from, res) => {
         return;
     }
 
-    const cartSummary = cart.map((item, index) => {
-        const price = parseFloat(item.price);  // Ensure price is a number
-        return `${index + 1}. ${item.name} - R$${price.toFixed(2)}`;  // Use toFixed on the number
-    }).join('\n');
-
-    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);  // Sum as numbers
+    const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${parseFloat(item.price).toFixed(2)}`).join('\n');
+    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
 
     sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
         { id: 'buy', title: 'Continuar comprando' },
@@ -177,7 +173,7 @@ const confirmPurchase = (phone_number_id, from, res) => {
         return;
     }
 
-    const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
 
     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
 
