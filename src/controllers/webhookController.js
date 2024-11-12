@@ -126,7 +126,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
     try {
         const [rows] = await db.execute(
-            `SELECT id, name, price, pharmacy_id FROM products WHERE id = ?`,
+            `SELECT id, name, price, pharmacy FROM products WHERE id = ?`,
             [productId]
         );
 
