@@ -201,7 +201,7 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
                 rows: rows.map((product) => ({
                     id: `product_${product.id}`,
                     title: product.name,
-                    description: `R$${parseFloat(product.price).toFixed(2)}`  // Converte para número antes de usar toFixed
+                    description: `R$${parseFloat(product.price).toFixed(2)}`
                 }))
             }
         ];
@@ -212,6 +212,9 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             buttonText: 'Ver Produtos',
             sections: listSections
         };
+
+        // Log the message data to debug
+        console.log('Sending list message data:', JSON.stringify(listData, null, 2));
 
         sendWhatsAppList(phone_number_id, from, listData, res);
     } catch (error) {

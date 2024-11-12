@@ -49,7 +49,6 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isL
 
 module.exports = { sendWhatsAppMessage };
 
-
 const sendWhatsAppList = (phone_number_id, to, listData, res) => {
     const messageData = {
         messaging_product: 'whatsapp',
@@ -74,6 +73,9 @@ const sendWhatsAppList = (phone_number_id, to, listData, res) => {
             }
         }
     };
+
+    // Log the actual message data before sending it
+    console.log('Message data to be sent:', JSON.stringify(messageData, null, 2));
 
     axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
         .then(() => res.sendStatus(200))
