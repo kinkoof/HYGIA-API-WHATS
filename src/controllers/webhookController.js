@@ -1,7 +1,7 @@
 const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
-const { createOrder } = require('../services/orderService'); // Supondo que você tenha uma função createOrder em um serviço separado
+const { createOrder } = require('./createOrderController');
 
 // Verificação do webhook
 exports.verifyWebhook = (req, res) => {
