@@ -143,7 +143,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
             id: product.id,
             name: product.name,
             price: product.price,
-            pharmacyId: product.pharmacy_id // Adiciona o ID da farmácia
+            pharmacyId: product.pharmacy
         });
 
         userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
@@ -187,7 +187,6 @@ const confirmPurchase = async (phone_number_id, from, res) => {
     }
 
     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
-    const pharmacyId = 1;
 
     // Adicionando log para depuração
     console.log("Itens no carrinho:", cart);
