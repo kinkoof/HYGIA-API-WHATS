@@ -115,7 +115,7 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Hygia');
 };
 
-// Adiciona produto ao carrinho
+// Adiciona produto ao carrinho com o pharmacyId
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
     const productId = selectedProductId.replace('product_', '');
@@ -126,7 +126,7 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
     try {
         const [rows] = await db.execute(
-            `SELECT id, name, price FROM products WHERE id = ?`,
+            `SELECT id, name, price, pharmacy_id FROM products WHERE id = ?`,
             [productId]
         );
 
@@ -138,8 +138,13 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
         const product = rows[0];
 
-        // Adiciona o produto ao carrinho do usuário
-        userFlows[from].cart.push(product);
+        // Adiciona o produto ao carrinho do usuário, incluindo o pharmacyId
+        userFlows[from].cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            pharmacyId: product.pharmacy_id // Adiciona o ID da farmácia
+        });
 
         userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
         console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
@@ -172,7 +177,7 @@ const showCart = (phone_number_id, from, res) => {
     ], false, 'Resumo do Carrinho');
 };
 
-// Confirma a compra e cria o pedido
+// Confirma a compra e cria os pedidos separados por farmácia
 const confirmPurchase = async (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
@@ -181,24 +186,41 @@ const confirmPurchase = async (phone_number_id, from, res) => {
         return;
     }
 
-    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
-    const pharmacyId = 1;
+    // Organiza os produtos por farmácia
+    const pharmacies = {};
 
-    sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
+    cart.forEach(item => {
+        if (!pharmacies[item.pharmacyId]) {
+            pharmacies[item.pharmacyId] = [];
+        }
+        pharmacies[item.pharmacyId].push({
+            productId: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: 1
+        });
+    });
 
-    const orderResult = await createOrder(from, pharmacyId, cart.map(item => ({
-        productId: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: 1
-    })), total);
+    const orderResults = [];
 
-    if (orderResult.success) {
-        console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
-    } else {
-        console.error('Erro ao criar pedido:', orderResult.error);
-        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+    // Cria um pedido para cada farmácia
+    for (const pharmacyId in pharmacies) {
+        const orderItems = pharmacies[pharmacyId];
+        const total = orderItems.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+
+        const orderResult = await createOrder(from, pharmacyId, orderItems, total);
+
+        if (orderResult.success) {
+            orderResults.push(orderResult.orderId);
+            console.log(`Pedido ${orderResult.orderId} criado com sucesso para a farmácia ${pharmacyId}.`);
+        } else {
+            console.error('Erro ao criar pedido:', orderResult.error);
+            sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+            return;
+        }
     }
+
+    sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${orderResults.reduce((sum, id) => sum + id, 0)}. Seus pedidos foram criados com sucesso.`, res);
 
     // Limpa o carrinho após a compra
     delete userFlows[from];
