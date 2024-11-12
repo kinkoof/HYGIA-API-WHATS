@@ -4,11 +4,11 @@ exports.listProducts = async (req, res) => {
     const { pharmacy } = req.query;
 
     if (!pharmacy) {
-        return res.status(400).json({ message: 'O ID da farmácia é obrigatório2.' });
+        return res.status(400).json({ message: 'O ID da farmácia é obrigatório.' });
     }
 
     try {
-        const [products] = await db.execute('SELECT * FROM products WHERE pharmacy = ?', [pharmacy]);
+        const [products] = await db.execute('SELECT * FROM products WHERE pharmacys = ?', [pharmacy]);
 
         if (products.length === 0) {
             return res.status(404).json({ message: 'Nenhum produto encontrado para essa farmácia.' });
