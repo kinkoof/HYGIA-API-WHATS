@@ -46,7 +46,7 @@ exports.handleMessage = (req, res) => {
                 startBuyFlow(phone_number_id, from, res);
             }
         } else if (buttonResponse === 'checkout') {
-            showCart(phone_number_id, from, res);
+            askForLocation(phone_number_id, from, res);
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
         } else {
@@ -82,7 +82,7 @@ exports.handleMessage = (req, res) => {
             if (userText === 'continuar') {
                 continueShopping(phone_number_id, from, res);
             } else if (userText === 'finalizar') {
-                showCart(phone_number_id, from, res);
+                askForLocation(phone_number_id, from, res);
             } else {
                 sendWhatsAppMessage(phone_number_id, from, 'Resposta inválida. Por favor, responda com "continuar" ou "finalizar".', res);
             }
@@ -113,6 +113,25 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
         { id: 'login', title: 'Entrar em sua conta' },
         { id: 'register', title: 'Se registrar' }
     ], false, 'Bem-vindo ao Hygia');
+};
+
+// Solicita a localização do usuário
+const askForLocation = (phone_number_id, from, res) => {
+    userFlows[from].status = 'awaiting_location';  // Altera o status para aguardar a localização
+    sendWhatsAppMessage(phone_number_id, from, 'Por favor, envie sua localização para finalizar a compra.', res);
+};
+
+// Processa a localização e confirma a compra
+const processLocation = async (phone_number_id, from, location, res) => {
+    if (!userFlows[from] || userFlows[from].status !== 'awaiting_location') {
+        return;
+    }
+
+    // Aqui, você pode armazenar a localização no banco de dados ou apenas usar para lógica adicional
+    console.log(`Localização recebida do usuário ${from}: ${location}`);
+
+    // Agora podemos prosseguir com a confirmação da compra
+    confirmPurchase(phone_number_id, from, res);
 };
 
 // Adiciona produto ao carrinho com o pharmacyId
@@ -198,15 +217,6 @@ const confirmPurchase = async (phone_number_id, from, res) => {
 
     if (orderResult.success) {
         console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
-
-        // Após o pedido ser confirmado, pedir para o usuário enviar a localização
-        sendWhatsAppMessage(phone_number_id, from, 'Agora, por favor, envie sua localização para que possamos enviar o seu pedido.', res, [
-            {
-                id: 'send_location',
-                title: 'Enviar Localização',
-                type: 'location'
-            }
-        ], false, 'Localização do Pedido');
     } else {
         console.error('Erro ao criar pedido:', orderResult.error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
