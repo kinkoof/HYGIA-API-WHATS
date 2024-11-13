@@ -14,9 +14,10 @@ exports.acceptOrder = async (req, res) => {
         const [result] = await db.execute(
             `UPDATE orders
              SET status = 'a', pharmacy_id = ?
-             WHERE id = ? AND pharmacy_id = ?`,
-            [pharmacyId, orderId, pharmacyId]
+             WHERE id = ?`,
+            [pharmacyId, orderId]  // Remover a parte `AND pharmacy_id = ?` para teste
         );
+
 
         if (result.affectedRows === 0) {
             console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode aceitar o pedido ${orderId}.`);
@@ -26,8 +27,10 @@ exports.acceptOrder = async (req, res) => {
         // Responder com sucesso
         return res.status(200).send('Pedido aceito.');
 
-    } catch (error) {
-        console.error('Erro ao aceitar pedido:', error);
+    }catch (error) {
+        console.error('Erro ao aceitar pedido:', error.message);
+        console.error(error.stack);
         return res.status(500).send('Erro ao processar a solicitação.');
     }
+
 };
