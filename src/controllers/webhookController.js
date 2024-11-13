@@ -114,6 +114,7 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Sauris');
 };
 
+
 // Função para acompanhar pedido
 const trackOrder = async (from, phone_number_id, res) => {
     try {
