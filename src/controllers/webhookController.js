@@ -124,33 +124,33 @@ const trackOrder = async (from, phone_number_id, res) => {
             [from]
         );
 
-        if (rows.length === 0) {
-            sendWhatsAppMessage(phone_number_id, from, 'Não encontramos nenhum pedido associado a sua conta.', res);
-            return;
-        }
+        // if (rows.length === 0) {
+        //     sendWhatsAppMessage(phone_number_id, from, 'Não encontramos nenhum pedido associado a sua conta.', res);
+        //     return;
+        // }
 
         const orderStatus = rows[0].status; // Pegando o status do pedido
 
-        let message = '';
+        let message = 'qwerqwefqwerfqw';
 
-        // Definindo a mensagem com base no status
-        switch (orderStatus) {
-            case 'w':  // Aguardando confirmação da farmácia
-                message = 'Seu pedido está aguardando confirmação da farmácia.';
-                break;
-            case 'a':  // Pedido confirmado
-                message = 'Seu pedido foi confirmado e em breve sairá para a entrega.';
-                break;
-            case 'x':  // Pedido cancelado
-                message = 'Seu pedido foi recusado pela farmacia.';
-                break;
-            case 'd':  // Pedido a caminho
-                message = 'Seu pedido está a caminho! Você o receberá em breve.';
-                break;
-            default:
-                message = 'Status do pedido não reconhecido. Tente novamente mais tarde.';
-                break;
-        }
+        // // Definindo a mensagem com base no status
+        // switch (orderStatus) {
+        //     case 'w':  // Aguardando confirmação da farmácia
+        //         message = 'Seu pedido está aguardando confirmação da farmácia.';
+        //         break;
+        //     case 'a':  // Pedido confirmado
+        //         message = 'Seu pedido foi confirmado e em breve sairá para a entrega.';
+        //         break;
+        //     case 'x':  // Pedido cancelado
+        //         message = 'Seu pedido foi recusado pela farmacia.';
+        //         break;
+        //     case 'd':  // Pedido a caminho
+        //         message = 'Seu pedido está a caminho! Você o receberá em breve.';
+        //         break;
+        //     default:
+        //         message = 'Status do pedido não reconhecido. Tente novamente mais tarde.';
+        //         break;
+        // }
 
         // Enviar a mensagem para o usuário com o status do pedido
         sendWhatsAppMessage(phone_number_id, from, message, res);
