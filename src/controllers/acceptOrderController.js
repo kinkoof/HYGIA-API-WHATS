@@ -21,11 +21,11 @@ exports.acceptOrder = async (req, res) => {
 
         if (result.affectedRows === 0) {
             console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode aceitar o pedido ${orderId}.`);
-            return res.status(400).send('Erro ao aceitar o pedido.');
+            return res.status(400).json({ success: false, message: 'Erro ao aceitar o pedido.' });
         }
 
         // Responder com sucesso
-        return res.status(200).send('Pedido aceito.');
+        return res.status(200).json({ success: true, message: 'Pedido aceito.' });
 
     }catch (error) {
         console.error('Erro ao aceitar pedido:', error.message);
