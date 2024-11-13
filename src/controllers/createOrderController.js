@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
-exports.createOrder = async (userId, items, total) => {
-    console.log("Itens recebidos:", items);  // Log para depuração
+exports.createOrder = async (userPhone, items, total, location) => {
+    console.log("Itens recebidos:", items);  // Adicionando log para depuração
 
     if (!Array.isArray(items)) {
         throw new Error("Os itens precisam ser um array.");
@@ -38,10 +38,20 @@ exports.createOrder = async (userId, items, total) => {
 
             const orderTotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-            // Inserir o pedido para esta farmácia
-            const [result] = await connection.execute(
-                `INSERT INTO orders (user_phone, pharmacy_id, total, items, status, closed_at) VALUES (?, ?, ?, ?, ?, NULL)`,
-                [userId, pharmacyId, orderTotal, JSON.stringify(orderItems), 'w']  // Armazenamos os itens como JSON
+            // Inserir o pedido para esta farmácia (incluindo os dados de localização)
+            const result = await connection.execute(
+                `INSERT INTO orders (user_phone, pharmacy_id, total, items, status, latitude, longitude, address)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    userPhone,  // Número de telefone do usuário
+                    pharmacyId, // ID da farmácia
+                    orderTotal, // Total do pedido
+                    JSON.stringify(orderItems), // Itens do pedido em formato JSON
+                    'w', // Status do pedido (aguardando)
+                    location.latitude,  // Latitude da localização
+                    location.longitude, // Longitude da localização
+                    location.address    // Endereço completo da localização
+                ]
             );
 
             const orderId = result.insertId;
