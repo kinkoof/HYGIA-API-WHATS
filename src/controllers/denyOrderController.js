@@ -1,19 +1,19 @@
 const db = require('../config/db');
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 
-exports.acceptOrder = async (phone_number_id, pharmacyId, orderId, res) => {
+exports.denyOrder = async (phone_number_id, pharmacyId, orderId, res) => {
     try {
-        // Atualizar o status da ordem para "a" (aceito pela farmácia)
+        // Atualizar o status da ordem para "x" (recusado pela farmácia)
         const [result] = await db.execute(
             `UPDATE orders
-             SET status = 'a', pharmacy_id = ?
+             SET status = 'x', pharmacy_id = ?
              WHERE id = ? AND pharmacy_id = ?`,
             [pharmacyId, orderId, pharmacyId]
         );
 
         if (result.affectedRows === 0) {
-            console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode aceitar o pedido ${orderId}.`);
-            return res.status(400).send('Erro ao aceitar o pedido.');
+            console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode recusar o pedido ${orderId}.`);
+            return res.status(400).send('Erro ao recusar o pedido.');
         }
 
         // Obter informações do usuário para notificação
@@ -31,17 +31,17 @@ exports.acceptOrder = async (phone_number_id, pharmacyId, orderId, res) => {
 
         const userPhone = userData[0].user_phone;
 
-        // Enviar a notificação para o usuário informando que o pedido foi aceito
-        const message = `Seu pedido foi aceito pela farmácia e será enviado em breve. Obrigado por escolher nosso serviço!`;
+        // Enviar a notificação para o usuário informando que o pedido foi recusado
+        const message = `Infelizmente, seu pedido foi recusado pela farmácia. Sinta-se à vontade para tentar novamente ou contatar outra farmácia.`;
 
         // Enviar a mensagem via WhatsApp
         sendWhatsAppMessage(phone_number_id, userPhone, message, res);
 
         // Responder com sucesso
-        return res.status(200).send('Pedido aceito e notificação enviada.');
+        return res.status(200).send('Pedido recusado e notificação enviada.');
 
     } catch (error) {
-        console.error('Erro ao aceitar pedido:', error);
+        console.error('Erro ao recusar pedido:', error);
         return res.status(500).send('Erro ao processar a solicitação.');
     }
 };

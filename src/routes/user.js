@@ -12,6 +12,7 @@ const editProductController = require('../controllers/editProductController');
 const deleteProductController = require('../controllers/deleteProductController');
 const getOrdersController = require('../controllers/getOrdersController');
 const acceptOrderController = require('../controllers/acceptOrderController')
+const denyOrderController = require('../controllers/denyOrderController')
 
 router.post('/register', registrationController.registerUser);
 
@@ -25,7 +26,9 @@ router.get('/info', profileController.getPharmacyProfile);
 
 router.get('/orders', getOrdersController.getOrdersByPharmacy);
 
-router.get('/accept/orders', acceptOrderController.acceptOrder);
+router.post('/accept/orders', acceptOrderController.acceptOrder);
+
+router.post('/deny/orders', denyOrderController.denyOrder);
 
 router.put('/edit', editPharmacyProfile.editPharmacyProfile)
 
