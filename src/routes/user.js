@@ -11,6 +11,7 @@ const getProductInfoController = require('../controllers/getProductInfoControlle
 const editProductController = require('../controllers/editProductController');
 const deleteProductController = require('../controllers/deleteProductController');
 const getOrdersController = require('../controllers/getOrdersController');
+const acceptOrderController = require('../controllers/acceptOrderController')
 
 router.post('/register', registrationController.registerUser);
 
@@ -23,6 +24,8 @@ router.get('/categories', getCategorysController.getCategories);
 router.get('/info', profileController.getPharmacyProfile);
 
 router.get('/orders', getOrdersController.getOrdersByPharmacy);
+
+router.get('/accept/orders', acceptOrderController.acceptOrder);
 
 router.put('/edit', editPharmacyProfile.editPharmacyProfile)
 

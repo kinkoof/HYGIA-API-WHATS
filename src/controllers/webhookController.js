@@ -255,23 +255,43 @@ const confirmPurchase = async (phone_number_id, from, res) => {
 
     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
 
-    // Adicionando log para depuração
-    console.log("Itens no carrinho:", cart);
-
+    // Confirmação do pedido
     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
 
-    // Verifique se os itens estão sendo passados corretamente como array
-    const orderResult = await createOrder(from, cart, total);  // Passando o carrinho (array) para createOrder
+    try {
+        // Criação do pedido no banco de dados
+        const orderResult = await createOrder(from, cart, total);  // Passando o carrinho (array) para createOrder
 
-    if (orderResult.success) {
-        console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
-    } else {
-        console.error('Erro ao criar pedido:', orderResult.error);
+        if (orderResult.success) {
+            console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
+
+            // Atualizar o status do pedido para "d" (aceito pela farmácia)
+            const updateResult = await db.execute(
+                `UPDATE orders
+                 SET status = 'd'  -- Atualizando o status para "aceito"
+                 WHERE user_id = ? AND id = ?`,
+                [from, orderResult.orderId]
+            );
+
+            if (updateResult.affectedRows > 0) {
+                // Envia uma mensagem para o usuário que o pedido foi aceito
+                const message = 'A farmácia aceitou seu pedido e estamos preparando o envio. Em breve, você receberá mais detalhes!';
+                sendWhatsAppMessage(phone_number_id, from, message, res);
+            } else {
+                console.error('Erro ao atualizar o status do pedido.');
+            }
+        } else {
+            console.error('Erro ao criar o pedido:', orderResult.error);
+            sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+        }
+
+        // Limpa o carrinho após a compra
+        delete userFlows[from];
+
+    } catch (error) {
+        console.error('Erro ao processar a compra:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
-
-    // Limpa o carrinho após a compra
-    delete userFlows[from];
 };
 
 // Processa a requisição de compra
