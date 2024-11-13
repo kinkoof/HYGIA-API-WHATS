@@ -198,6 +198,15 @@ const confirmPurchase = async (phone_number_id, from, res) => {
 
     if (orderResult.success) {
         console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
+
+        // Após o pedido ser confirmado, pedir para o usuário enviar a localização
+        sendWhatsAppMessage(phone_number_id, from, 'Agora, por favor, envie sua localização para que possamos enviar o seu pedido.', res, [
+            {
+                id: 'send_location',
+                title: 'Enviar Localização',
+                type: 'location'
+            }
+        ], false, 'Localização do Pedido');
     } else {
         console.error('Erro ao criar pedido:', orderResult.error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
