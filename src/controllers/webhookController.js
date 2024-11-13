@@ -118,8 +118,16 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
 // Solicita a localização do usuário
 const askForLocation = (phone_number_id, from, res) => {
     userFlows[from].status = 'awaiting_location';  // Altera o status para aguardar a localização
-    sendWhatsAppMessage(phone_number_id, from, 'Por favor, envie sua localização para finalizar a compra.', res);
+    sendWhatsAppMessage(
+        phone_number_id,
+        from,
+        'Por favor, envie sua localização para finalizar a compra.',
+        res,
+        null,
+        true
+    );
 };
+
 
 // Processa a localização e confirma a compra
 const processLocation = async (phone_number_id, from, location, res) => {
