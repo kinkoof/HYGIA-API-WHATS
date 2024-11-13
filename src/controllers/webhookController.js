@@ -102,6 +102,7 @@ exports.handleMessage = (req, res) => {
     }
 };
 
+
 // Inicia o fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
     if (!userFlows[from]) {
@@ -148,57 +149,36 @@ const processLocation = async (phone_number_id, from, location, res) => {
     const longitude = location.longitude;
     const address = location.name || `${latitude}, ${longitude}`;
 
-    // Obtendo o carrinho do usuário
-    const cart = userFlows[from]?.cart;
-    if (!cart || cart.length === 0) {
-        sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio, não foi possível registrar o pedido.', res);
-        return;
-    }
-
-    // Calculando o total do pedido
-    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
-
     try {
-        // Criando o novo pedido no banco de dados com todos os dados
-        const [orderResult] = await db.execute(
-            `INSERT INTO orders (user_id, latitude, longitude, address, total, status, created_at)
-             VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
-            [from, latitude, longitude, address, total]
+        // Atualizando a última ordem do usuário com a localização e endereço
+        const [result] = await db.execute(
+            `UPDATE orders
+             SET latitude = ?, longitude = ?, address = ?, status = 'confirmed'  -- Atualizando status para 'confirmado'
+             WHERE user_phone = ?
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [latitude, longitude, address, from]
         );
 
-        if (orderResult.affectedRows === 0) {
-            console.error('Erro ao criar o pedido no banco de dados.');
-            sendWhatsAppMessage(phone_number_id, from, 'Erro ao registrar seu pedido. Tente novamente mais tarde.', res);
+        if (result.affectedRows === 0) {
+            console.error('Erro: Nenhuma ordem encontrada para atualizar com a localização.');
+            sendWhatsAppMessage(phone_number_id, from, 'Erro ao registrar a localização. Tente novamente mais tarde.', res);
             return;
         }
 
-        const orderId = orderResult.insertId;
-
-        // Agora, associamos os produtos ao pedido (se necessário)
-        for (let item of cart) {
-            await db.execute(
-                `INSERT INTO order_items (order_id, product_id, quantity, price)
-                 VALUES (?, ?, ?, ?)`,
-                [orderId, item.id, 1, item.price] // Aqui estamos assumindo quantidade 1, pode ajustar conforme necessário
-            );
-        }
-
-        // Mensagem confirmando a criação do pedido
+        // Envia mensagem de pedido confirmado ao usuário
         sendWhatsAppMessage(
             phone_number_id,
             from,
-            `Pedido confirmado! Total: R$${total}. Aguardando confirmação da farmácia. Em breve, você receberá mais detalhes.`,
+            `Pedido confirmado! Estamos processando o envio. Obrigado pela compra!`,
             res
         );
 
-        console.log(`Pedido ${orderId} criado com sucesso para o usuário ${from}.`);
-
-        // Limpa o carrinho do usuário após a compra
-        delete userFlows[from];
+        console.log(`Localização e status do pedido atualizados para o usuário ${from}.`);
 
     } catch (error) {
-        console.error('Erro ao processar a localização e criar o pedido:', error);
-        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao salvar sua localização e criar o pedido. Tente novamente mais tarde.', res);
+        console.error('Erro ao atualizar a ordem com a localização:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao salvar sua localização. Tente novamente mais tarde.', res);
     }
 };
 
@@ -219,25 +199,130 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 
         if (rows.length === 0) {
             console.log(`Produto não encontrado para o ID: ${productId}`);
-            sendWhatsAppMessage(phone_number_id, from, 'Produto não encontrado. Tente novamente.', res);
+            sendWhatsAppMessage(phone_number_id, from, 'Produto não encontrado.', res);
             return;
         }
 
         const product = rows[0];
-        const cartItem = { id: product.id, name: product.name, price: product.price, pharmacy: product.pharmacy };
 
-        // Adicionando ao carrinho
-        userFlows[from].cart.push(cartItem);
-        sendWhatsAppMessage(phone_number_id, from, `${product.name} adicionado ao seu carrinho!`, res);
+        // Adiciona o produto ao carrinho do usuário, incluindo o pharmacyId
+        userFlows[from].cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            pharmacyId: product.pharmacy
+        });
 
+        userFlows[from].status = 'cart'; // Atualiza o estado para 'cart'
+        console.log(`Produto ${product.name} adicionado ao carrinho do usuário ${from}.`);
+
+        sendWhatsAppMessage(phone_number_id, from, `Produto ${product.name} adicionado ao carrinho. Deseja continuar comprando ou finalizar a compra?`, res, [
+            { id: 'buy', title: 'Continuar comprando' },
+            { id: 'checkout', title: 'Finalizar compra' }
+        ], false, 'Carrinho Atualizado');
     } catch (error) {
-        console.error('Erro ao adicionar produto ao carrinho:', error);
+        console.error('Erro ao adicionar ao carrinho:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Erro ao adicionar o produto ao carrinho. Tente novamente.', res);
     }
 };
 
+// Exibe o carrinho
+const showCart = (phone_number_id, from, res) => {
+    const cart = userFlows[from]?.cart;
+
+    if (!cart || cart.length === 0) {
+        sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
+        return;
+    }
+
+    const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${parseFloat(item.price).toFixed(2)}`).join('\n');
+    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+
+    sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
+        { id: 'buy', title: 'Continuar comprando' },
+        { id: 'confirm_purchase', title: 'Finalizar compra' }
+    ], false, 'Resumo do Carrinho');
+};
+
+// Confirma a compra e cria os pedidos separados por farmácia
 const confirmPurchase = async (phone_number_id, from, res) => {
-    console.log(`Usuário ${from} confirmou a compra.`);
-    // Chama o processo para confirmar a compra aqui, como a criação de um pedido, etc.
-    sendWhatsAppMessage(phone_number_id, from, 'Compra confirmada! Vamos finalizar com a entrega.', res);
+    const cart = userFlows[from]?.cart;
+
+    if (!cart || cart.length === 0) {
+        sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
+        return;
+    }
+
+    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+    const location = userFlows[from]?.location;  // Obter a localização do usuário
+
+    // Confirmação do pedido
+    sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
+
+    try {
+        // Criação do pedido no banco de dados com a localização
+        const orderResult = await createOrder(from, cart, total, location);  // Passando a localização aqui também
+
+        if (orderResult.success) {
+            console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
+
+            // Envia uma mensagem para o usuário confirmando o pedido
+            const message = 'A farmácia aceitou seu pedido e estamos preparando o envio. Em breve, você receberá mais detalhes!';
+            sendWhatsAppMessage(phone_number_id, from, message, res);
+        } else {
+            console.error('Erro ao criar o pedido:', orderResult.error);
+            sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+        }
+
+        // Limpa o carrinho após a compra
+        delete userFlows[from];
+
+    } catch (error) {
+        console.error('Erro ao processar a compra:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+    }
+};
+
+
+// Processa a requisição de compra
+const processBuyRequest = async (phone_number_id, from, productName, res) => {
+    try {
+        const [rows] = await db.execute(
+            `SELECT p.id, p.name, p.price
+            FROM products p
+            WHERE p.name LIKE ?`,
+            [`%${productName}%`]
+        );
+
+        if (rows.length === 0) {
+            sendWhatsAppMessage(phone_number_id, from, `Nenhum produto encontrado com o nome "${productName}".`, res);
+            return;
+        }
+
+        const listSections = [
+            {
+                title: 'Produtos Encontrados',
+                rows: rows.map((product) => ({
+                    id: `product_${product.id}`,
+                    title: product.name,
+                    description: `R$${parseFloat(product.price).toFixed(2)}`
+                }))
+            }
+        ];
+
+        const listData = {
+            headerText: 'Produtos Disponíveis',
+            bodyText: `Aqui estão os produtos que correspondem ao termo "${productName}":`,
+            buttonText: 'Ver Produtos',
+            sections: listSections
+        };
+
+        // Log the message data to debug
+        console.log('Sending list message data:', JSON.stringify(listData, null, 2));
+
+        sendWhatsAppList(phone_number_id, from, listData, res);
+    } catch (error) {
+        console.error('Erro ao consultar o banco de dados:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+    }
 };
