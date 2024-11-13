@@ -43,14 +43,14 @@ exports.createOrder = async (userPhone, items, total, location) => {
                 `INSERT INTO orders (user_phone, pharmacy_id, total, items, status, latitude, longitude, address)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    userPhone,  // Número de telefone do usuário
-                    pharmacyId, // ID da farmácia
-                    orderTotal, // Total do pedido
-                    JSON.stringify(orderItems), // Itens do pedido em formato JSON
-                    'w', // Status do pedido (aguardando)
-                    location.latitude,  // Latitude da localização
-                    location.longitude, // Longitude da localização
-                    location.address    // Endereço completo da localização
+                    userPhone,
+                    pharmacyId,
+                    orderTotal,
+                    JSON.stringify(orderItems),
+                    'w',
+                    location.latitude,
+                    location.longitude,
+                    location.address
                 ]
             );
 

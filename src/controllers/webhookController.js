@@ -153,7 +153,7 @@ const processLocation = async (phone_number_id, from, location, res) => {
         // Atualizando a última ordem do usuário com a localização e endereço
         const [result] = await db.execute(
             `UPDATE orders
-             SET latitude = ?, longitude = ?, address = ?, status = 'confirmed'  -- Atualizando status para 'confirmado'
+             SET latitude = ?, longitude = ?, address = ?, status = 'w'
              WHERE user_phone = ?
              ORDER BY created_at DESC
              LIMIT 1`,
