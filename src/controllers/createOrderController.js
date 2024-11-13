@@ -1,7 +1,5 @@
-const db = require('../config/db');
-
 exports.createOrder = async (userPhone, items, total, location) => {
-    console.log("Itens recebidos:", items);  // Adicionando log para depuração
+    console.log("Itens recebidos:", items);  // Verifique os itens recebidos
 
     if (!Array.isArray(items)) {
         throw new Error("Os itens precisam ser um array.");
@@ -25,6 +23,8 @@ exports.createOrder = async (userPhone, items, total, location) => {
             pharmacyOrders[item.pharmacyId].push(item);
         });
 
+        console.log('Pedidos organizados por farmácia:', pharmacyOrders);  // Verifique como os itens estão organizados
+
         // Criar um pedido para cada farmácia
         const orderResults = [];
 
@@ -37,6 +37,7 @@ exports.createOrder = async (userPhone, items, total, location) => {
             }));
 
             const orderTotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            console.log(`Total para a farmácia ${pharmacyId}:`, orderTotal); // Verifique o total calculado
 
             // Inserir o pedido para esta farmácia (incluindo os dados de localização)
             const result = await connection.execute(
@@ -54,11 +55,13 @@ exports.createOrder = async (userPhone, items, total, location) => {
                 ]
             );
 
+            console.log('Resultado da inserção do pedido:', result);  // Verifique a resposta do banco
             const orderId = result.insertId;
             orderResults.push({ pharmacyId, orderId });
         }
 
         await connection.commit();
+        console.log('Pedidos criados com sucesso:', orderResults);  // Confirmação de sucesso
         return { success: true, orderResults };
     } catch (error) {
         await connection.rollback();
