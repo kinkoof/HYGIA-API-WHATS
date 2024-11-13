@@ -26,13 +26,13 @@ router.get('/info', profileController.getPharmacyProfile);
 
 router.get('/orders', getOrdersController.getOrdersByPharmacy);
 
-router.post('/accept/orders', acceptOrderController.acceptOrder);
+router.post('/accept/orders/:id', acceptOrderController.acceptOrder);
 
-router.post('/deny/order', denyOrderController.denyOrder)
+router.post('/deny/order/:id', denyOrderController.denyOrder);
 
-router.put('/edit', editPharmacyProfile.editPharmacyProfile)
+router.put('/edit', editPharmacyProfile.editPharmacyProfile);
 
-router.get('/list/products', listProducts.listProducts)
+router.get('/list/products', listProducts.listProducts);
 
 router.get('/product/:id', getProductInfoController.getProductInfo);
 
