@@ -115,35 +115,44 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
 };
 
 // Função para acompanhar pedido
-const trackOrder = async (phone_number_id, from, res) => {
+const trackOrder = async (from, phone_number_id, res) => {
     try {
-        const orderStatus = await getOrderStatus(from);  // Supondo que você tenha uma função que recupera o status do pedido
+        // Consultar o status do pedido no banco de dados, com base no identificador do usuário
+        const [rows] = await db.execute(
+            `SELECT status FROM orders WHERE user_phone = ? ORDER BY created_at DESC LIMIT 1`,
+            [from]
+        );
 
-        if (orderStatus) {
-            let statusMessage = '';
-
-            switch (orderStatus) {
-                case 'w': // aguardando confirmação da farmácia
-                    statusMessage = 'Seu pedido está aguardando confirmação da farmácia.';
-                    break;
-                case 'a': // pedido confirmado
-                    statusMessage = 'Seu pedido foi confirmado e está sendo preparado.';
-                    break;
-                case 'x': // cancelado
-                    statusMessage = 'Seu pedido foi cancelado.';
-                    break;
-                case 'd': // a caminho
-                    statusMessage = 'Seu pedido está a caminho!';
-                    break;
-                default:
-                    statusMessage = 'Status desconhecido.';
-                    break;
-            }
-
-            sendWhatsAppMessage(phone_number_id, from, statusMessage, res);
-        } else {
-            sendWhatsAppMessage(phone_number_id, from, 'Não encontramos nenhum pedido associado à sua conta.', res);
+        if (rows.length === 0) {
+            sendWhatsAppMessage(phone_number_id, from, 'Não encontramos nenhum pedido associado a sua conta.', res);
+            return;
         }
+
+        const orderStatus = rows[0].status; // Pegando o status do pedido
+
+        let message = '';
+
+        // Definindo a mensagem com base no status
+        switch (orderStatus) {
+            case 'w':  // Aguardando confirmação da farmácia
+                message = 'Seu pedido está aguardando confirmação da farmácia.';
+                break;
+            case 'a':  // Pedido confirmado
+                message = 'Seu pedido foi confirmado e em breve sairá para a entrega.';
+                break;
+            case 'x':  // Pedido cancelado
+                message = 'Seu pedido foi recusado pela farmacia.';
+                break;
+            case 'd':  // Pedido a caminho
+                message = 'Seu pedido está a caminho! Você o receberá em breve.';
+                break;
+            default:
+                message = 'Status do pedido não reconhecido. Tente novamente mais tarde.';
+                break;
+        }
+
+        // Enviar a mensagem para o usuário com o status do pedido
+        sendWhatsAppMessage(phone_number_id, from, message, res);
     } catch (error) {
         console.error('Erro ao recuperar o status do pedido:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao recuperar o status do seu pedido. Tente novamente mais tarde.', res);
@@ -151,23 +160,35 @@ const trackOrder = async (phone_number_id, from, res) => {
 };
 
 // Função para ver pedidos anteriores
-const viewOrders = async (phone_number_id, from, res) => {
+const viewOrders = async (from, phone_number_id, res) => {
     try {
-        const previousOrders = await getPreviousOrders(from);  // Função fictícia para buscar pedidos anteriores
+        // Consultar apenas os pedidos finalizados (status 'f')
+        const [rows] = await db.execute(
+            `SELECT id, status, total, created_at, pharmacy
+            FROM orders
+            WHERE user_phone = ? AND status = 'f'
+            ORDER BY created_at DESC`,
+            [from]
+        );
 
-        if (previousOrders.length === 0) {
-            sendWhatsAppMessage(phone_number_id, from, 'Você ainda não fez nenhum pedido.', res);
+        if (rows.length === 0) {
+            sendWhatsAppMessage(phone_number_id, from, 'Você ainda não tem pedidos finalizados.', res);
             return;
         }
 
-        const ordersList = previousOrders.map(order => {
-            return `Pedido ID: ${order.id}\nStatus: ${order.status}\nTotal: R$${parseFloat(order.total).toFixed(2)}`;
+        // Gerar uma lista de pedidos com informações detalhadas
+        const ordersList = rows.map(order => {
+            // Formatar o status do pedido
+            let statusMessage = 'Pedido finalizado';  // Já sabemos que é 'f', então a mensagem é fixa
+
+            return `Pedido ID: ${order.id}\nStatus: ${statusMessage}\nTotal: R$${parseFloat(order.total).toFixed(2)}\nData: ${new Date(order.created_at).toLocaleDateString()}\nFarmácia: ${order.pharmacy}`;
         }).join('\n\n');
 
-        sendWhatsAppMessage(phone_number_id, from, `Seus pedidos anteriores:\n\n${ordersList}`, res);
+        // Enviar a lista de pedidos para o usuário
+        sendWhatsAppMessage(phone_number_id, from, `Seus pedidos finalizados:\n\n${ordersList}`, res);
     } catch (error) {
-        console.error('Erro ao buscar pedidos anteriores:', error);
-        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao buscar seus pedidos anteriores. Tente novamente mais tarde.', res);
+        console.error('Erro ao buscar pedidos finalizados:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao buscar seus pedidos finalizados. Tente novamente mais tarde.', res);
     }
 };
 
