@@ -150,37 +150,32 @@ const processLocation = async (phone_number_id, from, location, res) => {
     const address = location.name || `${latitude}, ${longitude}`;
 
     try {
-        // Atualizando a última ordem do usuário com a localização e endereço
-        const [result] = await db.execute(
-            `UPDATE orders
-             SET latitude = ?, longitude = ?, address = ?, status = 'w'
-             WHERE user_phone = ?
-             ORDER BY created_at DESC
-             LIMIT 1`,
-            [latitude, longitude, address, from]
-        );
+        // Criação de um pedido com a localização do usuário
+        const orderResult = await createOrder(from, userFlows[from].cart, userFlows[from].cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2), location);
 
-        if (result.affectedRows === 0) {
-            console.error('Erro: Nenhuma ordem encontrada para atualizar com a localização.');
-            sendWhatsAppMessage(phone_number_id, from, 'Erro ao registrar a localização. Tente novamente mais tarde.', res);
-            return;
+        if (orderResult.success) {
+            console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
+
+            sendWhatsAppMessage(
+                phone_number_id,
+                from,
+                `Pedido confirmado! Estamos processando o envio. Obrigado pela compra!`,
+                res
+            );
+        } else {
+            console.error('Erro ao criar o pedido:', orderResult.error);
+            sendWhatsAppMessage(phone_number_id, from, 'Erro ao processar seu pedido. Tente novamente mais tarde.', res);
         }
 
-        // Envia mensagem de pedido confirmado ao usuário
-        sendWhatsAppMessage(
-            phone_number_id,
-            from,
-            `Pedido confirmado! Estamos processando o envio. Obrigado pela compra!`,
-            res
-        );
-
-        console.log(`Localização e status do pedido atualizados para o usuário ${from}.`);
+        // Limpa o carrinho após a compra
+        delete userFlows[from];
 
     } catch (error) {
-        console.error('Erro ao atualizar a ordem com a localização:', error);
-        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao salvar sua localização. Tente novamente mais tarde.', res);
+        console.error('Erro ao processar a compra:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
 };
+
 
 // Adiciona produto ao carrinho com o pharmacyId
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
