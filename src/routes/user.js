@@ -26,9 +26,9 @@ router.get('/info', profileController.getPharmacyProfile);
 
 router.get('/orders', getOrdersController.getOrdersByPharmacy);
 
-router.post('/accept/orders/', acceptOrderController.acceptOrder);
+router.post('/accept/orders', acceptOrderController.acceptOrder);
 
-router.post('/deny/orders/:id', denyOrderController.denyOrder);
+router.post('/deny/orders', denyOrderController.denyOrder);
 
 router.put('/edit', editPharmacyProfile.editPharmacyProfile);
 
