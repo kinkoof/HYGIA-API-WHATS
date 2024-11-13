@@ -18,11 +18,11 @@ exports.denyOrder = async (phone_number_id, pharmacyId, orderId, res) => {
 
         if (result.affectedRows === 0) {
             console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode recusar o pedido ${orderId}.`);
-            return res.status(400).send('Erro ao recusar o pedido.');
+            return res.status(400).json({ success: false, message: 'Erro ao recusar o pedido.' });
         }
 
         // Responder com sucesso
-        return res.status(200).send('Pedido recusado.');
+        return res.status(200).json({ success: true, message: 'Pedido recusado.' });
 
     } catch (error) {
         console.error('Erro ao recusar pedido:', error);
