@@ -1,4 +1,3 @@
-// acceptOrderController.js
 const db = require('../config/db');
 
 exports.acceptOrder = async (req, res) => {

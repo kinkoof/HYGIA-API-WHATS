@@ -1,4 +1,3 @@
-// denyOrderController.js
 const db = require('../config/db');
 
 exports.denyOrder = async (phone_number_id, pharmacyId, orderId, res) => {
@@ -12,8 +11,8 @@ exports.denyOrder = async (phone_number_id, pharmacyId, orderId, res) => {
         const [result] = await db.execute(
             `UPDATE orders
              SET status = 'x', pharmacy_id = ?
-             WHERE id = ? AND pharmacy_id = ?`,
-            [pharmacyId, orderId, pharmacyId]
+             WHERE id = ?`,
+            [pharmacyId, orderId]
         );
 
         if (result.affectedRows === 0) {
