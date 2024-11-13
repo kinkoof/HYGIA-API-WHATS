@@ -22,7 +22,7 @@ router.get('/categories', getCategorysController.getCategories);
 
 router.get('/info', profileController.getPharmacyProfile);
 
-router.get('/orders', profileController.getOrdersController);
+router.get('/orders', getOrdersController.getOrdersByPharmacy);
 
 router.put('/edit', editPharmacyProfile.editPharmacyProfile)
 
