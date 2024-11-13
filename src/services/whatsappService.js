@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { ACCESS_TOKEN } = require('../config/config');
 
-const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isLocationRequest = false, headerText = 'Hygia') => {
+const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isLocationRequest = false, headerText = 'Sauris') => {
     let messageData;
 
     if (isLocationRequest) {

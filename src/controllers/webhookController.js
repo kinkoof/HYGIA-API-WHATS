@@ -18,7 +18,6 @@ exports.verifyWebhook = (req, res) => {
     res.status(400).send('Bad Request');
 };
 
-// Tratamento das mensagens recebidas
 exports.handleMessage = (req, res) => {
     const body = req.body;
     const entry = body.entry?.[0]?.changes?.[0]?.value;
@@ -49,6 +48,10 @@ exports.handleMessage = (req, res) => {
             askForLocation(phone_number_id, from, res);
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
+        } else if (buttonResponse === 'track_order') {
+            trackOrder(phone_number_id, from, res);
+        } else if (buttonResponse === 'view_orders') {
+            viewOrders(phone_number_id, from, res);
         } else {
             res.sendStatus(200);
         }
@@ -102,6 +105,72 @@ exports.handleMessage = (req, res) => {
     }
 };
 
+// Envia as opções de boas-vindas
+const sendWelcomeOptions = (phone_number_id, from, res) => {
+    sendWhatsAppMessage(phone_number_id, from, 'Bem-vindo ao Sauris, como podemos te ajudar hoje?', res, [
+        { id: 'buy', title: 'Comprar medicamentos' },
+        { id: 'track_order', title: 'Acompanhar pedido' },
+        { id: 'view_orders', title: 'Ver pedidos' }
+    ], false, 'Bem-vindo ao Sauris');
+};
+
+// Função para acompanhar pedido
+const trackOrder = async (phone_number_id, from, res) => {
+    try {
+        const orderStatus = await getOrderStatus(from);  // Supondo que você tenha uma função que recupera o status do pedido
+
+        if (orderStatus) {
+            let statusMessage = '';
+
+            switch (orderStatus) {
+                case 'w': // aguardando confirmação da farmácia
+                    statusMessage = 'Seu pedido está aguardando confirmação da farmácia.';
+                    break;
+                case 'a': // pedido confirmado
+                    statusMessage = 'Seu pedido foi confirmado e está sendo preparado.';
+                    break;
+                case 'x': // cancelado
+                    statusMessage = 'Seu pedido foi cancelado.';
+                    break;
+                case 'd': // a caminho
+                    statusMessage = 'Seu pedido está a caminho!';
+                    break;
+                default:
+                    statusMessage = 'Status desconhecido.';
+                    break;
+            }
+
+            sendWhatsAppMessage(phone_number_id, from, statusMessage, res);
+        } else {
+            sendWhatsAppMessage(phone_number_id, from, 'Não encontramos nenhum pedido associado à sua conta.', res);
+        }
+    } catch (error) {
+        console.error('Erro ao recuperar o status do pedido:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao recuperar o status do seu pedido. Tente novamente mais tarde.', res);
+    }
+};
+
+// Função para ver pedidos anteriores
+const viewOrders = async (phone_number_id, from, res) => {
+    try {
+        const previousOrders = await getPreviousOrders(from);  // Função fictícia para buscar pedidos anteriores
+
+        if (previousOrders.length === 0) {
+            sendWhatsAppMessage(phone_number_id, from, 'Você ainda não fez nenhum pedido.', res);
+            return;
+        }
+
+        const ordersList = previousOrders.map(order => {
+            return `Pedido ID: ${order.id}\nStatus: ${order.status}\nTotal: R$${parseFloat(order.total).toFixed(2)}`;
+        }).join('\n\n');
+
+        sendWhatsAppMessage(phone_number_id, from, `Seus pedidos anteriores:\n\n${ordersList}`, res);
+    } catch (error) {
+        console.error('Erro ao buscar pedidos anteriores:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao buscar seus pedidos anteriores. Tente novamente mais tarde.', res);
+    }
+};
+
 
 // Inicia o fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
@@ -115,15 +184,6 @@ const startBuyFlow = (phone_number_id, from, res) => {
 const continueShopping = (phone_number_id, from, res) => {
     userFlows[from].status = 'awaiting_product'; // Atualiza o status para aguardar um novo produto
     sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
-};
-
-// Envia as opções de boas-vindas
-const sendWelcomeOptions = (phone_number_id, from, res) => {
-    sendWhatsAppMessage(phone_number_id, from, 'Bem-vindo ao Hygia, como podemos te ajudar hoje?', res, [
-        { id: 'buy', title: 'Comprar medicamentos' },
-        { id: 'login', title: 'Entrar em sua conta' },
-        { id: 'register', title: 'Se registrar' }
-    ], false, 'Bem-vindo ao Hygia');
 };
 
 // Solicita a localização do usuário
@@ -277,7 +337,6 @@ const confirmPurchase = async (phone_number_id, from, res) => {
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
 };
-
 
 // Processa a requisição de compra
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
