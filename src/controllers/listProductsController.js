@@ -8,7 +8,7 @@ exports.listProducts = async (req, res) => {
     }
 
     try {
-        const [products] = await db.execute('SELECT * FROM products WHERE pharmacys = ?', [pharmacy]);
+        const [products] = await db.execute('SELECT * FROM products WHERE pharmacy = ?', [pharmacy]);
 
         if (products.length === 0) {
             return res.status(404).json({ message: 'Nenhum produto encontrado para essa farmácia.' });
