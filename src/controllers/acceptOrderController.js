@@ -1,7 +1,15 @@
+// acceptOrderController.js
 const db = require('../config/db');
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 
-exports.acceptOrder = async (phone_number_id, pharmacyId, orderId, res) => {
+exports.acceptOrder = async (req, res) => {
+    const { orderId, pharmacyId } = req.body;
+
+    // Verifique se os parâmetros necessários foram passados
+    if (!orderId || !pharmacyId) {
+        return res.status(400).send('Faltam parâmetros necessários: orderId ou pharmacyId.');
+    }
+
     try {
         // Atualizar o status da ordem para "a" (aceito pela farmácia)
         const [result] = await db.execute(
@@ -35,7 +43,7 @@ exports.acceptOrder = async (phone_number_id, pharmacyId, orderId, res) => {
         const message = `Seu pedido foi aceito pela farmácia e será enviado em breve. Obrigado por escolher nosso serviço!`;
 
         // Enviar a mensagem via WhatsApp
-        sendWhatsAppMessage(phone_number_id, userPhone, message, res);
+        await sendWhatsAppMessage(phone_number_id, userPhone, message);
 
         // Responder com sucesso
         return res.status(200).send('Pedido aceito e notificação enviada.');
