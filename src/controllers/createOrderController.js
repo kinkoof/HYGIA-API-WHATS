@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 exports.createOrder = async (userId, items, total) => {
-    console.log("Itens recebidos:", items);  // Adicionando log para depuração
+    console.log("Itens recebidos:", items);  // Log para depuração
 
     if (!Array.isArray(items)) {
         throw new Error("Os itens precisam ser um array.");
@@ -39,9 +39,9 @@ exports.createOrder = async (userId, items, total) => {
             const orderTotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
             // Inserir o pedido para esta farmácia
-            const result = await connection.execute(
-                `INSERT INTO orders (user_phone, pharmacy_id, total, items, status) VALUES (?, ?, ?, ?, ?)`,
-                [userId, pharmacyId, orderTotal, JSON.stringify(orderItems), 'w']  // Aqui armazenamos os itens como JSON
+            const [result] = await connection.execute(
+                `INSERT INTO orders (user_phone, pharmacy_id, total, items, status, closed_at) VALUES (?, ?, ?, ?, ?, NULL)`,
+                [userId, pharmacyId, orderTotal, JSON.stringify(orderItems), 'w']  // Armazenamos os itens como JSON
             );
 
             const orderId = result.insertId;

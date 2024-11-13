@@ -90,7 +90,18 @@ exports.handleMessage = (req, res) => {
             sendWelcomeOptions(phone_number_id, from, res);
         }
     }
+    else if (messageObject.location) {  // Adicionando verificação para localização
+        const location = messageObject.location;
+        console.log(`Localização recebida do usuário ${from}:`, location);
+
+        if (userFlows[from]?.status === 'awaiting_location') {
+            processLocation(phone_number_id, from, location, res);  // Chama processLocation com os dados de localização
+        } else {
+            sendWhatsAppMessage(phone_number_id, from, 'Localização recebida, mas nenhuma compra em andamento.', res);
+        }
+    }
 };
+
 
 // Inicia o fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
@@ -128,18 +139,47 @@ const askForLocation = (phone_number_id, from, res) => {
     );
 };
 
-
-// Processa a localização e confirma a compra
 const processLocation = async (phone_number_id, from, location, res) => {
     if (!userFlows[from] || userFlows[from].status !== 'awaiting_location') {
         return;
     }
 
-    // Aqui, você pode armazenar a localização no banco de dados ou apenas usar para lógica adicional
-    console.log(`Localização recebida do usuário ${from}: ${location}`);
+    // Extraindo latitude, longitude e endereço da localização recebida
+    const latitude = location.latitude;
+    const longitude = location.longitude;
+    const address = location.name || `${latitude}, ${longitude}`;
 
-    // Agora podemos prosseguir com a confirmação da compra
-    confirmPurchase(phone_number_id, from, res);
+    try {
+        // Atualizando a última ordem do usuário com a localização e endereço
+        const [result] = await db.execute(
+            `UPDATE orders
+             SET latitude = ?, longitude = ?, address = ?, status = 'confirmed'  -- Atualizando status para 'confirmado'
+             WHERE user_id = ?
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [latitude, longitude, address, from]
+        );
+
+        if (result.affectedRows === 0) {
+            console.error('Erro: Nenhuma ordem encontrada para atualizar com a localização.');
+            sendWhatsAppMessage(phone_number_id, from, 'Erro ao registrar a localização. Tente novamente mais tarde.', res);
+            return;
+        }
+
+        // Envia mensagem de pedido confirmado ao usuário
+        sendWhatsAppMessage(
+            phone_number_id,
+            from,
+            `Pedido confirmado! Estamos processando o envio. Obrigado pela compra!`,
+            res
+        );
+
+        console.log(`Localização e status do pedido atualizados para o usuário ${from}.`);
+
+    } catch (error) {
+        console.error('Erro ao atualizar a ordem com a localização:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao salvar sua localização. Tente novamente mais tarde.', res);
+    }
 };
 
 // Adiciona produto ao carrinho com o pharmacyId
