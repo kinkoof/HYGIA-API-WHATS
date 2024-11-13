@@ -1,3 +1,5 @@
+const db = require("../config/db");
+
 exports.createOrder = async (userPhone, items, total, location) => {
     console.log("Itens recebidos:", items);  // Verifique os itens recebidos
 
