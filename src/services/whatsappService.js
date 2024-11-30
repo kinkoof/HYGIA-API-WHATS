@@ -67,16 +67,26 @@ const sendProactiveMessage = async (to, messageText) => {
         });
 
         // Verificando a resposta para garantir sucesso
-        if (response.status === 200) {
-            return { success: true }; // Retorna um sucesso
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                setOrders(orders.map(order =>
+                    order.id === orderId ? { ...order, status: 'a' } : order
+                ));
+                alert('Pedido aceito com sucesso!');
+            } else {
+                setError(data.message || 'Erro desconhecido ao enviar o pedido.');
+            }
         } else {
-            return { success: false, message: 'Erro ao enviar a mensagem.' }; // Caso a resposta não seja 200
+            const data = await response.json();
+            setError(data.message || 'Erro ao processar o envio do pedido.');
         }
-    } catch (error) {
-        console.error('Erro ao enviar a mensagem:', error);
-        return { success: false, message: error.message }; // Retorna o erro caso algo dê errado
+    } catch (err) {
+        console.error('Erro no processo de envio do pedido:', err);
+        setError('Erro ao processar o envio do pedido.');
     }
 };
+
 
 
 const sendWhatsAppList = (phone_number_id, to, listData, res) => {
