@@ -2,7 +2,6 @@ const db = require('../config/db');
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 
 exports.acceptOrder = async (req, res) => {
-    console.log('teste acceptOrders')
     const { orderId, pharmacyId } = req.body;
 
     if (!orderId || !pharmacyId) {

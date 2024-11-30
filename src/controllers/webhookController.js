@@ -29,6 +29,7 @@ exports.handleMessage = (req, res) => {
     }
 
     const { phone_number_id } = entry.metadata;
+    console.log('numero de celular que envia, bot:',phone_number_id)
     const from = messageObject.from;
 
     console.log('Mensagem recebida:', messageObject);
