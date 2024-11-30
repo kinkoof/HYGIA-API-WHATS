@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const { sendWhatsAppMessage } = require('../services/whatsappService');
+const { sendProactiveMessage } = require('../services/whatsappService'); // Importar a função correta
 
 exports.acceptOrder = async (req, res) => {
     const { orderId, pharmacyId } = req.body;
@@ -42,9 +42,9 @@ exports.acceptOrder = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Telefone do cliente não encontrado.' });
         }
 
-        // Enviar notificação ao cliente
+        // Enviar mensagem proativa ao cliente
         const message = `Olá! Seu pedido #${orderId} foi aceito pela farmácia e será processado em breve.`;
-        const notificationResult = await sendWhatsAppMessage(pharmacyId, userPhone, message);
+        const notificationResult = await sendProactiveMessage('434839199709985', userPhone, message);
 
         if (!notificationResult.success) {
             console.log(`Falha ao enviar notificação para o telefone ${userPhone}.`);

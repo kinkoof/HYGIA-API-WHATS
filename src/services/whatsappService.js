@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { ACCESS_TOKEN } = require('../config/config');
 
-const sendWhatsAppMessage = (phone_number_id , to, text, res, buttons = null, isLocationRequest = false, headerText = 'Sauris') => {
+const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isLocationRequest = false, headerText = 'Sauris') => {
     let messageData;
 
     if (isLocationRequest) {
@@ -39,7 +39,7 @@ const sendWhatsAppMessage = (phone_number_id , to, text, res, buttons = null, is
         };
     }
 
-    axios.post(`https://graph.facebook.com/v19.0/434839199709985/messages?access_token=${ACCESS_TOKEN}`, messageData)
+    axios.post(`https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`, messageData)
         .then(() => res.sendStatus(200))
         .catch(error => {
             console.error('Error sending message:', error);
@@ -47,7 +47,30 @@ const sendWhatsAppMessage = (phone_number_id , to, text, res, buttons = null, is
         });
 };
 
-module.exports = { sendWhatsAppMessage };
+// Função para envio proativo de mensagens no WhatsApp
+const sendProactiveMessage = (phone_number_id, to, messageText) => {
+    const url = `https://graph.facebook.com/v19.0/${phone_number_id}/messages`;
+
+    const messageData = {
+        messaging_product: 'whatsapp',
+        to,
+        text: { body: messageText }
+    };
+
+    axios.post(url, messageData, {
+        headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => {
+            console.log(`Mensagem proativa enviada para ${to}:`, response.data);
+        })
+        .catch(error => {
+            console.error('Erro ao enviar mensagem proativa:', error.response?.data || error.message);
+        });
+};
+
 
 const sendWhatsAppList = (phone_number_id, to, listData, res) => {
     const messageData = {
@@ -85,4 +108,4 @@ const sendWhatsAppList = (phone_number_id, to, listData, res) => {
         });
 };
 
-module.exports = { sendWhatsAppMessage, sendWhatsAppList };
+module.exports = { sendWhatsAppMessage, sendWhatsAppList, sendProactiveMessage };
