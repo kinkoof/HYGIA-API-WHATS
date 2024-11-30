@@ -11,8 +11,8 @@ exports.getOrdersByPharmacy = async (req, res) => {
     }
 
     try {
-        // Consulta para obter os pedidos da farmácia com o userId
-        const [rows] = await db.execute('SELECT * FROM orders WHERE pharmacy_id = ?', [userId]);
+        // Consulta para obter os pedidos da farmácia com o userId, ordenados do mais recente para o mais antigo
+        const [rows] = await db.execute('SELECT * FROM orders WHERE pharmacy_id = ? ORDER BY created_at DESC', [userId]);
 
         // Verifica se encontrou os pedidos
         if (rows.length === 0) {

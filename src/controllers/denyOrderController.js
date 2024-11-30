@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { sendProactiveMessage } = require('../services/whatsappService'); // Importar a função correta
 
 exports.denyOrder = async (req, res) => {
     const { orderId, pharmacyId } = req.body;
@@ -9,27 +10,53 @@ exports.denyOrder = async (req, res) => {
     }
 
     try {
-        // Atualizar o status da ordem para "a" (aceito pela farmácia)
+        // Atualizar o status da ordem para "x" (rejeitado pela farmácia)
         const [result] = await db.execute(
             `UPDATE orders
              SET status = 'x', pharmacy_id = ?
              WHERE id = ?`,
-            [pharmacyId, orderId]  // Remover a parte `AND pharmacy_id = ?` para teste
+            [pharmacyId, orderId]
         );
-
 
         if (result.affectedRows === 0) {
             console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode rejeitar o pedido ${orderId}.`);
             return res.status(400).json({ success: false, message: 'Erro ao rejeitar o pedido.' });
         }
 
-        // Responder com sucesso
-        return res.status(200).json({ success: true, message: 'Pedido rejeitado.' });
+        // Buscar o número de telefone do cliente
+        const [orderDetails] = await db.execute(
+            `SELECT o.user_phone
+             FROM orders o
+             WHERE o.id = ?`,
+            [orderId]
+        );
 
-    }catch (error) {
+        if (orderDetails.length === 0) {
+            console.log(`Pedido ${orderId} não encontrado após a atualização.`);
+            return res.status(400).json({ success: false, message: 'Erro ao buscar os detalhes do pedido.' });
+        }
+
+        const { user_phone: userPhone } = orderDetails[0];
+
+        if (!userPhone) {
+            console.log(`Telefone do usuário não encontrado para o pedido ${orderId}.`);
+            return res.status(400).json({ success: false, message: 'Telefone do cliente não encontrado.' });
+        }
+
+        // Enviar mensagem proativa ao cliente
+        const message = `Infelizmente, seu pedido foi rejeitado pela farmácia.`;
+        const notificationResult = await sendProactiveMessage(userPhone, message);
+
+        if (!notificationResult.success) {
+            console.log(`Falha ao enviar notificação para o telefone ${userPhone}.`);
+            return res.status(500).json({ success: false, message: 'Erro ao enviar notificação ao cliente.' });
+        }
+
+        return res.status(200).json({ success: true, message: 'Pedido rejeitado e cliente notificado.' });
+
+    } catch (error) {
         console.error('Erro ao rejeitar pedido:', error.message);
         console.error(error.stack);
         return res.status(500).send('Erro ao processar a solicitação.');
     }
-
 };

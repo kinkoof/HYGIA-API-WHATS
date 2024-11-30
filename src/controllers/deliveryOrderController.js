@@ -1,7 +1,7 @@
 const db = require('../config/db');
-const { sendProactiveMessage } = require('../services/whatsappService'); // Importar a função correta
+const { sendProactiveMessage } = require('../services/whatsappService');
 
-exports.acceptOrder = async (req, res) => {
+exports.deliveryOrder = async (req, res) => {
     const { orderId, pharmacyId } = req.body;
 
     if (!orderId || !pharmacyId) {
@@ -12,13 +12,13 @@ exports.acceptOrder = async (req, res) => {
         // Atualizar o status do pedido
         const [result] = await db.execute(
             `UPDATE orders
-             SET status = 'a', pharmacy_id = ?
+             SET status = 'd', pharmacy_id = ?
              WHERE id = ?`,
             [pharmacyId, orderId]
         );
 
         if (result.affectedRows === 0) {
-            console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode aceitar o pedido ${orderId}.`);
+            console.log(`Erro: Nenhuma ordem encontrada ou a farmácia não pode enviar o pedido ${orderId}.`);
             return res.status(400).json({ success: false, message: 'Erro ao aceitar o pedido.' });
         }
 
@@ -43,7 +43,7 @@ exports.acceptOrder = async (req, res) => {
         }
 
         // Enviar mensagem proativa ao cliente
-        const message = `Seu pedido foi aceito pela farmácia e será enviado em breve.`;
+        const message = `Seu pedido saiu para entrega.`;
         const notificationResult = await sendProactiveMessage( userPhone, message);
 
         if (!notificationResult.success) {
@@ -51,10 +51,10 @@ exports.acceptOrder = async (req, res) => {
             return res.status(500).json({ success: false, message: 'Erro ao enviar notificação ao cliente.' });
         }
 
-        return res.status(200).json({ success: true, message: 'Pedido aceito e cliente notificado.' });
+        return res.status(200).json({ success: true, message: 'Pedido enviado e cliente notificado.' });
 
     } catch (error) {
-        console.error('Erro ao aceitar pedido:', error.message);
+        console.error('Erro ao enviar o pedido:', error.message);
         console.error(error.stack);
         return res.status(500).send('Erro ao processar a solicitação.');
     }
