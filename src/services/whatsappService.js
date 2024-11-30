@@ -48,7 +48,7 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isL
 };
 
 // Função para envio proativo de mensagens no WhatsApp
-const sendProactiveMessage = ( to, messageText) => {
+const sendProactiveMessage = async (to, messageText) => {
     const url = `https://graph.facebook.com/v19.0/434839199709985/messages`;
 
     const messageData = {
@@ -57,18 +57,25 @@ const sendProactiveMessage = ( to, messageText) => {
         text: { body: messageText }
     };
 
-    axios.post(url, messageData, {
-        headers: {
-            Authorization: `Bearer ${ACCESS_TOKEN}`,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(response => {
-            console.log(`Mensagem proativa enviada para ${to}:`, response.data);
-        })
-        .catch(error => {
-            console.error('Erro ao enviar mensagem proativa:', error.response?.data || error.message);
+    try {
+        // Enviando a requisição usando axios
+        const response = await axios.post(url, messageData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
+
+        // Verificando a resposta para garantir sucesso
+        if (response.status === 200) {
+            return { success: true }; // Retorna um sucesso
+        } else {
+            return { success: false, message: 'Erro ao enviar a mensagem.' }; // Caso a resposta não seja 200
+        }
+    } catch (error) {
+        console.error('Erro ao enviar a mensagem:', error);
+        return { success: false, message: error.message }; // Retorna o erro caso algo dê errado
+    }
 };
 
 
