@@ -48,7 +48,7 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isL
 };
 
 // Função para envio proativo de mensagens no WhatsApp
-const sendProactiveMessage = async (to, messageText) => {
+const sendProactiveMessage = ( to, messageText) => {
     const url = `https://graph.facebook.com/v19.0/434839199709985/messages`;
 
     const messageData = {
@@ -57,36 +57,19 @@ const sendProactiveMessage = async (to, messageText) => {
         text: { body: messageText }
     };
 
-    try {
-        // Enviando a requisição usando axios
-        const response = await axios.post(url, messageData, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        // Verificando a resposta para garantir sucesso
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                setOrders(orders.map(order =>
-                    order.id === orderId ? { ...order, status: 'a' } : order
-                ));
-                alert('Pedido aceito com sucesso!');
-            } else {
-                setError(data.message || 'Erro desconhecido ao enviar o pedido.');
-            }
-        } else {
-            const data = await response.json();
-            setError(data.message || 'Erro ao processar o envio do pedido.');
+    axios.post(url, messageData, {
+        headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
         }
-    } catch (err) {
-        console.error('Erro no processo de envio do pedido:', err);
-        setError('Erro ao processar o envio do pedido.');
-    }
+    })
+        .then(response => {
+            console.log(`Mensagem proativa enviada para ${to}:`, response.data);
+        })
+        .catch(error => {
+            console.error('Erro ao enviar mensagem proativa:', error.response?.data || error.message);
+        });
 };
-
 
 
 const sendWhatsAppList = (phone_number_id, to, listData, res) => {
