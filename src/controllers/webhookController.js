@@ -258,7 +258,6 @@ const processLocation = async (phone_number_id, from, location, res) => {
     }
 };
 
-
 // Adiciona produto ao carrinho com o pharmacyId
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
     console.log(`Usuário ${from} tentou adicionar o produto ${selectedProductId} ao carrinho.`);
