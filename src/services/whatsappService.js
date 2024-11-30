@@ -48,8 +48,8 @@ const sendWhatsAppMessage = (phone_number_id, to, text, res, buttons = null, isL
 };
 
 // Função para envio proativo de mensagens no WhatsApp
-const sendProactiveMessage = (phone_number_id, to, messageText) => {
-    const url = `https://graph.facebook.com/v19.0/${phone_number_id}/messages`;
+const sendProactiveMessage = ( to, messageText) => {
+    const url = `https://graph.facebook.com/v19.0/434839199709985/messages`;
 
     const messageData = {
         messaging_product: 'whatsapp',

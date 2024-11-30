@@ -43,8 +43,8 @@ exports.acceptOrder = async (req, res) => {
         }
 
         // Enviar mensagem proativa ao cliente
-        const message = `Olá! Seu pedido #${orderId} foi aceito pela farmácia e será processado em breve.`;
-        const notificationResult = await sendProactiveMessage('434839199709985', userPhone, message);
+        const message = `Olá! Seu pedido #${orderId} foi aceito pela farmácia e será enviado em breve.`;
+        const notificationResult = await sendProactiveMessage( userPhone, message);
 
         if (!notificationResult.success) {
             console.log(`Falha ao enviar notificação para o telefone ${userPhone}.`);
