@@ -29,7 +29,7 @@ exports.handleMessage = (req, res) => {
     }
 
     const { phone_number_id } = entry.metadata;
-    console.log('numero de celular que envia, bot:',phone_number_id)
+    console.log('numero de celular que envia, bot:', phone_number_id)
     const from = messageObject.from;
 
     console.log('Mensagem recebida:', messageObject);
@@ -234,7 +234,10 @@ const processLocation = async (phone_number_id, from, location, res) => {
 
     try {
         // Criação de um pedido com a localização do usuário
-        const orderResult = await createOrder(from, userFlows[from].cart, userFlows[from].cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2), location);
+        const cart = userFlows[from].cart;
+        const totalAmount = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+
+        const orderResult = await createOrder(from, cart, totalAmount, location);
 
         if (orderResult.success) {
             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
@@ -245,6 +248,29 @@ const processLocation = async (phone_number_id, from, location, res) => {
                 `Pedido confirmado! Estamos processando o envio. Obrigado pela compra!`,
                 res
             );
+
+            // Dados de pagamento
+            const paymentData = {
+                referenceId: orderResult.orderId,
+                beneficiaryName: 'Loja Sauris', // Nome do beneficiário
+                addressLine1: address,         // Endereço do cliente
+                city: 'Guaratinguetá',         // Cidade (ajustar conforme necessário)
+                state: 'SP',                   // Estado (ajustar conforme necessário)
+                postalCode: '12517-610',       // CEP (ajustar conforme necessário)
+                currency: 'BRL',               // Moeda (Real Brasileiro)
+                totalAmountValue: totalAmount, // Valor total do pedido
+                items: cart.map(item => ({
+                    retailerId: `prod-${item.id}`,
+                    name: item.name,
+                    amountValue: parseFloat(item.price),
+                    quantity: item.quantity || 1,
+                })),
+                paymentType: 'p2m-lite:stripe', // Tipo de pagamento
+                footerText: 'Finalize seu pedido realizando o pagamento!',
+            };
+
+            // Envio da mensagem de pagamento
+            sendWhatsAppPayment(phone_number_id, from, paymentData, res);
         } else {
             console.error('Erro ao criar o pedido:', orderResult.error);
             sendWhatsAppMessage(phone_number_id, from, 'Erro ao processar seu pedido. Tente novamente mais tarde.', res);
