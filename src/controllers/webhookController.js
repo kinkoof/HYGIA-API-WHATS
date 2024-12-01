@@ -322,6 +322,43 @@ const showCart = (phone_number_id, from, res) => {
 };
 
 // Confirma a compra e cria os pedidos separados por farmácia
+// const confirmPurchase = async (phone_number_id, from, res) => {
+//     const cart = userFlows[from]?.cart;
+
+//     if (!cart || cart.length === 0) {
+//         sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
+//         return;
+//     }
+
+//     // Calcular o total do carrinho
+//     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+
+//     // Confirmar a compra com os campos obrigatórios
+//     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
+
+//     try {
+//         // Criar o pedido no banco de dados com os dados obrigatórios
+//         const orderResult = await createOrder(from, cart, total, userFlows[from]?.location);  // Apenas passando o total e a localização, se disponível
+
+//         if (orderResult.success) {
+//             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
+
+//             // Envia uma mensagem confirmando a compra com dados essenciais
+//             sendWhatsAppMessage(phone_number_id, from, `Seu pedido foi criado com sucesso! Total: R$${total}. Estamos processando o envio. Em breve, você receberá mais detalhes!`, res);
+//         } else {
+//             console.error('Erro ao criar o pedido:', orderResult.error);
+//             sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+//         }
+
+//         // Limpa o carrinho após a compra
+//         delete userFlows[from];
+
+//     } catch (error) {
+//         console.error('Erro ao processar a compra:', error);
+//         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
+//     }
+// };
+
 const confirmPurchase = async (phone_number_id, from, res) => {
     const cart = userFlows[from]?.cart;
 
@@ -330,34 +367,48 @@ const confirmPurchase = async (phone_number_id, from, res) => {
         return;
     }
 
-    // Calcular o total do carrinho
     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+    const location = userFlows[from]?.location;  // Obter a localização do usuário
 
-    // Confirmar a compra com os campos obrigatórios
+    // Confirmação do pedido
     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
 
     try {
-        // Criar o pedido no banco de dados com os dados obrigatórios
-        const orderResult = await createOrder(from, cart, total, userFlows[from]?.location);  // Apenas passando o total e a localização, se disponível
+        const paymentData = {
+            referenceId: `order-${Date.now()}`, // ID do pedido, pode ser o ID do pedido real do banco de dados
+            beneficiaryName: 'Farmácia XYZ', // Nome do beneficiário
+            addressLine1: location ? location.name : 'Endereço não fornecido', // Endereço da localização ou padrão
+            postalCode: location ? location.postalCode : '00000', // Código postal ou padrão
+            totalAmountValue: total, // Total do pedido
+            items: cart.map(item => ({
+                retailerId: item.pharmacyId, // ID da farmácia (retailer)
+                name: item.name, // Nome do produto
+                amountValue: item.price, // Preço do item
+                quantity: 1, // Quantidade do item (ajustar conforme necessário)
+                saleAmountValue: item.price, // Preço de venda do item
+            })),
+            subtotalValue: total, // Subtotal
+            taxValue: '0.00', // Se houver imposto, definir aqui
+            shippingValue: '0.00', // Se houver custo de envio, definir aqui
+            discountValue: '0.00', // Desconto (caso haja)
+            paymentType: 'p2m-lite:stripe', // Tipo de pagamento
+            currency: 'BRL', // Moeda do pagamento
+            paymentConfiguration: 'some-configuration-id', // ID de configuração de pagamento
+            footerText: 'Obrigado pela sua compra!' // Texto do rodapé (opcional)
+        };
 
-        if (orderResult.success) {
-            console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
-
-            // Envia uma mensagem confirmando a compra com dados essenciais
-            sendWhatsAppMessage(phone_number_id, from, `Seu pedido foi criado com sucesso! Total: R$${total}. Estamos processando o envio. Em breve, você receberá mais detalhes!`, res);
-        } else {
-            console.error('Erro ao criar o pedido:', orderResult.error);
-            sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
-        }
-
-        // Limpa o carrinho após a compra
-        delete userFlows[from];
+        // Envia a mensagem de pagamento
+        sendWhatsAppPayment(phone_number_id, from, paymentData, res);
 
     } catch (error) {
-        console.error('Erro ao processar a compra:', error);
+        console.error('Erro ao processar o pedido:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
+
+    // Limpa o carrinho após a compra
+    delete userFlows[from];
 };
+
 
 // Processa a requisição de compra
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
