@@ -137,7 +137,7 @@ const sendWhatsAppPayment = (phone_number_id, to, paymentData, res) => {
                             address_line2: paymentData.addressLine2 || '',
                             city: paymentData.city || '',
                             state: paymentData.state || '',
-                            country: paymentData.country || 'Singapore',
+                            country: paymentData.country || 'BR',
                             postal_code: paymentData.postalCode
                         }
                     ],
