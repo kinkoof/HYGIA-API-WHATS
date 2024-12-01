@@ -97,6 +97,7 @@ exports.handleMessage = (req, res) => {
     else if (messageObject.location) {  // Adicionando verificação para localização
         const location = messageObject.location;
         console.log(`Localização recebida do usuário ${from}:`, location);
+        console.log(userFlows[from]?.status)
 
         if (userFlows[from]?.status === 'awaiting_location') {
             processLocation(phone_number_id, from, location, res);  // Chama processLocation com os dados de localização
