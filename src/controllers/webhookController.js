@@ -304,22 +304,22 @@ const addToCart = async (phone_number_id, from, selectedProductId, res) => {
 };
 
 // Exibe o carrinho
-const showCart = (phone_number_id, from, res) => {
-    const cart = userFlows[from]?.cart;
+// const showCart = (phone_number_id, from, res) => {
+//     const cart = userFlows[from]?.cart;
 
-    if (!cart || cart.length === 0) {
-        sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
-        return;
-    }
+//     if (!cart || cart.length === 0) {
+//         sendWhatsAppMessage(phone_number_id, from, 'Seu carrinho está vazio.', res);
+//         return;
+//     }
 
-    const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${parseFloat(item.price).toFixed(2)}`).join('\n');
-    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
+//     const cartSummary = cart.map((item, index) => `${index + 1}. ${item.name} - R$${parseFloat(item.price).toFixed(2)}`).join('\n');
+//     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
 
-    sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
-        { id: 'buy', title: 'Continuar comprando' },
-        { id: 'confirm_purchase', title: 'Finalizar compra' }
-    ], false, 'Resumo do Carrinho');
-};
+//     sendWhatsAppMessage(phone_number_id, from, `Itens no seu carrinho:\n${cartSummary}\n\nTotal: R$${total}`, res, [
+//         { id: 'buy', title: 'Continuar comprando' },
+//         { id: 'confirm_purchase', title: 'Finalizar compra' }
+//     ], false, 'Resumo do Carrinho');
+// };
 
 // Confirma a compra e cria os pedidos separados por farmácia
 const confirmPurchase = async (phone_number_id, from, res) => {
