@@ -370,9 +370,6 @@ const confirmPurchase = async (phone_number_id, from, res) => {
     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
     const location = userFlows[from]?.location;  // Obter a localização do usuário
 
-    // Confirmação do pedido
-    sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
-
     try {
         const paymentData = {
             referenceId: `order-${Date.now()}`, // ID do pedido, pode ser o ID do pedido real do banco de dados
@@ -402,7 +399,6 @@ const confirmPurchase = async (phone_number_id, from, res) => {
 
     } catch (error) {
         console.error('Erro ao processar o pedido:', error);
-        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
 
     // Limpa o carrinho após a compra
