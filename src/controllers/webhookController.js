@@ -253,6 +253,9 @@ const processLocation = async (phone_number_id, from, location, res) => {
                 postalCode: '12517-610',       // CEP (ajustar conforme necessário)
                 currency: 'BRL',               // Moeda (Real Brasileiro)
                 totalAmountValue: '10', // Valor total do pedido
+                subtotalValue: '10',
+                taxValue:'10',
+                shippingValue: '10',
                 items: cart.map(item => ({
                     retailerId: `prod-${item.id}`,
                     name: 'teste',
