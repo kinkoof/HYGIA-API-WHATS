@@ -252,12 +252,12 @@ const processLocation = async (phone_number_id, from, location, res) => {
                 state: 'SP',                   // Estado (ajustar conforme necessário)
                 postalCode: '12517-610',       // CEP (ajustar conforme necessário)
                 currency: 'BRL',               // Moeda (Real Brasileiro)
-                totalAmountValue: totalAmount, // Valor total do pedido
+                totalAmountValue: '10', // Valor total do pedido
                 items: cart.map(item => ({
                     retailerId: `prod-${item.id}`,
-                    name: item.name,
-                    amountValue: parseFloat(item.price),
-                    quantity: item.quantity || 1,
+                    name: 'teste',
+                    amountValue: 899,
+                    quantity: 1,
                 })),
                 paymentType: 'p2m-lite:stripe', // Tipo de pagamento
                 footerText: 'Finalize seu pedido realizando o pagamento!',
