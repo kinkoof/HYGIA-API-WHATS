@@ -29,7 +29,7 @@ exports.handleMessage = (req, res) => {
     }
 
     const { phone_number_id } = entry.metadata;
-    console.log('numero de celular que envia, bot:', phone_number_id)
+    console.log('numero de celular que envia, bot:',phone_number_id)
     const from = messageObject.from;
 
     console.log('Mensagem recebida:', messageObject);
@@ -239,20 +239,18 @@ const processLocation = async (phone_number_id, from, location, res) => {
         if (orderResult.success) {
             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
 
-
-            // Após a confirmação, chama a função processBuyRequest para continuar o processo de pagamento
-            const productName = userFlows[from]?.cart[0]?.name || ''; // Ajuste conforme necessário
-            if (productName) {
-                await processBuyRequest(phone_number_id, from, productName, res);
-            } else {
-                console.error('Nenhum produto disponível no carrinho para processar o pagamento.');
-            }
+            sendWhatsAppMessage(
+                phone_number_id,
+                from,
+                `Pedido confirmado! Estamos processando o envio. Obrigado pela compra!`,
+                res
+            );
         } else {
             console.error('Erro ao criar o pedido:', orderResult.error);
             sendWhatsAppMessage(phone_number_id, from, 'Erro ao processar seu pedido. Tente novamente mais tarde.', res);
         }
 
-        // Limpa o fluxo do usuário após o processo
+        // Limpa o carrinho após a compra
         delete userFlows[from];
 
     } catch (error) {
@@ -260,7 +258,6 @@ const processLocation = async (phone_number_id, from, location, res) => {
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);
     }
 };
-
 
 // Adiciona produto ao carrinho com o pharmacyId
 const addToCart = async (phone_number_id, from, selectedProductId, res) => {
