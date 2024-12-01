@@ -250,14 +250,14 @@ const processLocation = async (phone_number_id, from, location, res) => {
                 addressLine1: address,         // Endereço do cliente
                 postalCode: '12517-610',       // CEP (ajustar conforme necessário)
                 currency: 'BRL',               // Moeda (Real Brasileiro)
-                totalAmountValue: 30, // Valor total do pedido
-                subtotalValue: 10,
-                taxValue: 10,
-                shippingValue: 10,
+                totalAmountValue: 300, // Valor total do pedido
+                subtotalValue: 100,
+                taxValue: 100,
+                shippingValue: 100,
                 items: cart.map(item => ({
                     retailerId: `prod-${item.id}`,
                     name: 'teste',
-                    amountValue: 10,
+                    amountValue: 100,
                     quantity: 1,
                 })),
                 paymentType: 'p2m-lite:stripe', // Tipo de pagamento
