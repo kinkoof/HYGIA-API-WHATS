@@ -245,16 +245,26 @@ const processLocation = async (phone_number_id, from, location, res) => {
         if (orderResult.success) {
             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
 
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount: totalAmount * 100,
-                currency: 'brl',
-                description: `Pagamento do pedido ${orderResult.orderId}`,
-                metadata: { order_id: orderResult.orderId },
+            // Criando a sessão de Checkout do Stripe
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: cart.map(item => ({
+                    price_data: {
+                        currency: 'brl',
+                        product_data: {
+                            name: item.name,
+                        },
+                        unit_amount: parseFloat(item.price) * 100,
+                    },
+                    quantity: item.quantity,
+                })),
+                mode: 'payment',
+                success_url: 'https://www.seusite.com/sucesso?session_id={CHECKOUT_SESSION_ID}', // URL de sucesso
+                cancel_url: 'https://www.seusite.com/cancelado',
             });
 
-            const paymentLink = paymentIntent.client_secret;
-
-            const paymentMessage = `Seu pedido foi criado com sucesso. Para concluir o pagamento, clique no link abaixo:\n${paymentLink}`;
+            // Enviar o link de pagamento para o cliente
+            const paymentMessage = `Seu pedido foi criado com sucesso. Para concluir o pagamento, clique no link abaixo:\n${session.url}`;
             sendWhatsAppMessage(phone_number_id, from, paymentMessage, res);
 
         } else {
