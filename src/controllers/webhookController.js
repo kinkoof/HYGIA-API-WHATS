@@ -242,13 +242,6 @@ const processLocation = async (phone_number_id, from, location, res) => {
         if (orderResult.success) {
             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
 
-            sendWhatsAppMessage(
-                phone_number_id,
-                from,
-                `Pedido confirmado! Estamos processando o envio. Obrigado pela compra!`,
-                res
-            );
-
             // Dados de pagamento
             const paymentData = {
                 referenceId: orderResult.orderId,
