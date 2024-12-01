@@ -29,7 +29,7 @@ exports.handleMessage = (req, res) => {
     }
 
     const { phone_number_id } = entry.metadata;
-    console.log('numero de celular que envia, bot:',phone_number_id)
+    console.log('numero de celular que envia, bot:', phone_number_id)
     const from = messageObject.from;
 
     console.log('Mensagem recebida:', messageObject);
@@ -330,22 +330,21 @@ const confirmPurchase = async (phone_number_id, from, res) => {
         return;
     }
 
+    // Calcular o total do carrinho
     const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2);
-    const location = userFlows[from]?.location;  // Obter a localização do usuário
 
-    // Confirmação do pedido
+    // Confirmar a compra com os campos obrigatórios
     sendWhatsAppMessage(phone_number_id, from, `Compra confirmada! Total: R$${total}. Obrigado por comprar conosco!`, res);
 
     try {
-        // Criação do pedido no banco de dados com a localização
-        const orderResult = await createOrder(from, cart, total, location);  // Passando a localização aqui também
+        // Criar o pedido no banco de dados com os dados obrigatórios
+        const orderResult = await createOrder(from, cart, total, userFlows[from]?.location);  // Apenas passando o total e a localização, se disponível
 
         if (orderResult.success) {
             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
 
-            // Envia uma mensagem para o usuário confirmando o pedido
-            const message = 'A farmácia aceitou seu pedido e estamos preparando o envio. Em breve, você receberá mais detalhes!';
-            sendWhatsAppMessage(phone_number_id, from, message, res);
+            // Envia uma mensagem confirmando a compra com dados essenciais
+            sendWhatsAppMessage(phone_number_id, from, `Seu pedido foi criado com sucesso! Total: R$${total}. Estamos processando o envio. Em breve, você receberá mais detalhes!`, res);
         } else {
             console.error('Erro ao criar o pedido:', orderResult.error);
             sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao processar seu pedido. Tente novamente mais tarde.', res);

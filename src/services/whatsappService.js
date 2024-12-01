@@ -111,4 +111,105 @@ const sendWhatsAppList = (phone_number_id, to, listData, res) => {
         });
 };
 
-module.exports = { sendWhatsAppMessage, sendWhatsAppList, sendProactiveMessage };
+const sendWhatsAppPayment = (phone_number_id, to, paymentData, res) => {
+    const messageData = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'interactive',
+        interactive: {
+            type: 'order_details',
+            body: {
+                text: 'Por favor, realize o pagamento do seu pedido!'
+            },
+            footer: {
+                text: paymentData.footerText || 'Obrigado pela sua compra!'
+            },
+            action: {
+                name: 'review_and_pay',
+                parameters: {
+                    reference_id: paymentData.referenceId,
+                    type: paymentData.type || 'physical-goods',
+                    beneficiaries: [
+                        {
+                            name: paymentData.beneficiaryName,
+                            address_line1: paymentData.addressLine1,
+                            address_line2: paymentData.addressLine2 || '',
+                            city: paymentData.city || '',
+                            state: paymentData.state || '',
+                            country: paymentData.country || 'Singapore',
+                            postal_code: paymentData.postalCode
+                        }
+                    ],
+                    payment_type: paymentData.paymentType || 'p2m-lite:stripe',
+                    payment_configuration: paymentData.paymentConfiguration,
+                    currency: paymentData.currency || 'SGD',
+                    total_amount: {
+                        value: paymentData.totalAmountValue,
+                        offset: 100
+                    },
+                    order: {
+                        status: 'pending',
+                        items: paymentData.items.map(item => ({
+                            retailer_id: item.retailerId,
+                            name: item.name,
+                            amount: {
+                                value: item.amountValue,
+                                offset: 100
+                            },
+                            quantity: item.quantity,
+                            sale_amount: {
+                                value: item.saleAmountValue || item.amountValue,
+                                offset: 100
+                            }
+                        })),
+                        subtotal: {
+                            value: paymentData.subtotalValue,
+                            offset: 100
+                        },
+                        tax: {
+                            value: paymentData.taxValue,
+                            offset: 100,
+                            description: paymentData.taxDescription || ''
+                        },
+                        shipping: {
+                            value: paymentData.shippingValue,
+                            offset: 100,
+                            description: paymentData.shippingDescription || ''
+                        },
+                        discount: paymentData.discountValue
+                            ? {
+                                value: paymentData.discountValue,
+                                offset: 100,
+                                description: paymentData.discountDescription || '',
+                                discount_program_name: paymentData.discountProgramName || ''
+                            }
+                            : undefined,
+                        expiration: paymentData.expiration
+                            ? {
+                                timestamp: paymentData.expiration.timestamp,
+                                description: paymentData.expiration.description
+                            }
+                            : undefined
+                    }
+                }
+            }
+        }
+    };
+
+    // Log para depuração
+    console.log('Message data to be sent:', JSON.stringify(messageData, null, 2));
+
+    // Envio da mensagem via API
+    axios.post(
+        `https://graph.facebook.com/v19.0/${phone_number_id}/messages?access_token=${ACCESS_TOKEN}`,
+        messageData
+    )
+        .then(() => res.sendStatus(200))
+        .catch(error => {
+            console.error('Error sending payment message:', error);
+            res.sendStatus(500);
+        });
+};
+
+module.exports = { sendWhatsAppMessage, sendWhatsAppList, sendProactiveMessage, sendWhatsAppPayment };
