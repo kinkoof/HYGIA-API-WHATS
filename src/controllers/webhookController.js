@@ -1,7 +1,9 @@
-const { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppPayment } = require('../services/whatsappService');
+const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 const { createOrder } = require('./createOrderController');
+const stripe = require('stripe')('sk_test_51QRIsnRoyF58F5zaRv3NUpM8zUw6j3uulTnvqG4ZwlE3nXbsOWOwjUcuSGyoZH10bPbm4ARN7LX3Ou1Qkf27IJDi00Q6OeFDN0');
+
 
 // Verificação do webhook
 exports.verifyWebhook = (req, res) => {
@@ -243,29 +245,18 @@ const processLocation = async (phone_number_id, from, location, res) => {
         if (orderResult.success) {
             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
 
-            // Dados de pagamento
-            const paymentData = {
-                referenceId: orderResult.orderId,
-                beneficiaryName: 'Loja Sauris', // Nome do beneficiário
-                addressLine1: address,         // Endereço do cliente
-                postalCode: '12517-610',       // CEP (ajustar conforme necessário)
-                currency: 'BRL',               // Moeda (Real Brasileiro)
-                totalAmountValue: 300, // Valor total do pedido
-                subtotalValue: 100,
-                taxValue: 100,
-                shippingValue: 100,
-                items: cart.map(item => ({
-                    retailerId: `prod-${item.id}`,
-                    name: 'teste',
-                    amountValue: 100,
-                    quantity: 1,
-                })),
-                paymentType: 'p2m-lite:stripe', // Tipo de pagamento
-                footerText: 'Finalize seu pedido realizando o pagamento!',
-            };
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: totalAmount * 100,
+                currency: 'brl',
+                description: `Pagamento do pedido ${orderResult.orderId}`,
+                metadata: { order_id: orderResult.orderId },
+            });
 
-            // Envio da mensagem de pagamento
-            sendWhatsAppPayment(phone_number_id, from, paymentData, res);
+            const paymentLink = paymentIntent.client_secret;
+
+            const paymentMessage = `Seu pedido foi criado com sucesso. Para concluir o pagamento, clique no link abaixo:\n${paymentLink}`;
+            sendWhatsAppMessage(phone_number_id, from, paymentMessage, res);
+
         } else {
             console.error('Erro ao criar o pedido:', orderResult.error);
             sendWhatsAppMessage(phone_number_id, from, 'Erro ao processar seu pedido. Tente novamente mais tarde.', res);
