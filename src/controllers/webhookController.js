@@ -1,4 +1,4 @@
-const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
+const { sendWhatsAppMessage, sendWhatsAppList, sendWhatsAppPayment } = require('../services/whatsappService');
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 const { createOrder } = require('./createOrderController');
