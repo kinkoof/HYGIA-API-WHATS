@@ -256,7 +256,7 @@ const processLocation = async (phone_number_id, from, location, res) => {
                         },
                         unit_amount: parseFloat(item.price) * 100,
                     },
-                    quantity: item.quantity,
+                    quantity: item.quantity || 1,
                 })),
                 mode: 'payment',
                 success_url: 'https://www.seusite.com/sucesso?session_id={CHECKOUT_SESSION_ID}', // URL de sucesso
