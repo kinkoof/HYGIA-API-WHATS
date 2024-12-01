@@ -248,8 +248,6 @@ const processLocation = async (phone_number_id, from, location, res) => {
                 referenceId: orderResult.orderId,
                 beneficiaryName: 'Loja Sauris', // Nome do beneficiário
                 addressLine1: address,         // Endereço do cliente
-                city: 'Guaratinguetá',         // Cidade (ajustar conforme necessário)
-                state: 'SP',                   // Estado (ajustar conforme necessário)
                 postalCode: '12517-610',       // CEP (ajustar conforme necessário)
                 currency: 'BRL',               // Moeda (Real Brasileiro)
                 totalAmountValue: 30, // Valor total do pedido
