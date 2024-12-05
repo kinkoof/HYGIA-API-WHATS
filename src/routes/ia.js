@@ -1,5 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const listDataBase = require('../controllers/listDataBase');
+const listDataBaseController = require('../controllers/listDataBaseController');
 
-router.get('/tables', listDataBase.listTables);
+router.get('/tables', listDataBaseController.listTables);
