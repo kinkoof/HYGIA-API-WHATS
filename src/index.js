@@ -10,7 +10,6 @@ const iaRoutes = require('../src/routes/ia');
 const app = express();
 
 app.use(cors());
-
 app.use(bodyParser.json());
 
 app.use('/webhook', webhookRoutes);

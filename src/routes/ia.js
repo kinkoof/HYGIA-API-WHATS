@@ -3,3 +3,5 @@ const router = express.Router();
 const listDataBaseController = require('../controllers/listDataBaseController');
 
 router.get('/tables', listDataBaseController.listTables);
+
+module.exports = router;
