@@ -3,7 +3,7 @@ const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 const { createOrder } = require('./createOrderController');
 const stripe = require('stripe')('sk_test_51QRIsnRoyF58F5zaRv3NUpM8zUw6j3uulTnvqG4ZwlE3nXbsOWOwjUcuSGyoZH10bPbm4ARN7LX3Ou1Qkf27IJDi00Q6OeFDN0');
-
+const axios = require('axios');
 
 // Verificação do webhook
 exports.verifyWebhook = (req, res) => {
