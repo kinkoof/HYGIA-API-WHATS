@@ -51,8 +51,8 @@ exports.handleMessage = (req, res) => {
             askForLocation(phone_number_id, from, res);
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
-        } else if (buttonResponse === 'track_order') {
-            trackOrder(phone_number_id, from, res);
+        } else if (buttonResponse === 'help') {
+            requestMessageToIa(phone_number_id, from, res);
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
         } else {
@@ -102,7 +102,7 @@ exports.handleMessage = (req, res) => {
         console.log(userFlows[from]?.status)
 
         if (userFlows[from]?.status === 'awaiting_location') {
-            processLocation(phone_number_id, from, location, res);  // Chama processLocation com os dados de localização
+            processLocation(phone_number_id, from, location, res);
         } else {
             sendWhatsAppMessage(phone_number_id, from, 'Localização recebida, mas nenhuma compra em andamento.', res);
         }
@@ -119,49 +119,10 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
 };
 
 
-// Função para acompanhar pedido
-const trackOrder = async (from, phone_number_id, res) => {
-    try {
-        // Consultar o status do pedido no banco de dados, com base no identificador do usuário
-        const [rows] = await db.execute(
-            `SELECT status FROM orders WHERE user_phone = ? ORDER BY created_at DESC LIMIT 1`,
-            [from]
-        );
+const requestMessageToIa = async (phone_number_id, from, res) => {
 
-        // if (rows.length === 0) {
-        //     sendWhatsAppMessage(phone_number_id, from, 'Não encontramos nenhum pedido associado a sua conta.', res);
-        //     return;
-        // }
-
-        const orderStatus = rows[0].status; // Pegando o status do pedido
-
-        let message = 'qwerqwefqwerfqw';
-
-        // // Definindo a mensagem com base no status
-        // switch (orderStatus) {
-        //     case 'w':  // Aguardando confirmação da farmácia
-        //         message = 'Seu pedido está aguardando confirmação da farmácia.';
-        //         break;
-        //     case 'a':  // Pedido confirmado
-        //         message = 'Seu pedido foi confirmado e em breve sairá para a entrega.';
-        //         break;
-        //     case 'x':  // Pedido cancelado
-        //         message = 'Seu pedido foi recusado pela farmacia.';
-        //         break;
-        //     case 'd':  // Pedido a caminho
-        //         message = 'Seu pedido está a caminho! Você o receberá em breve.';
-        //         break;
-        //     default:
-        //         message = 'Status do pedido não reconhecido. Tente novamente mais tarde.';
-        //         break;
-        // }
-
-        // Enviar a mensagem para o usuário com o status do pedido
-        sendWhatsAppMessage(phone_number_id, from, message, res);
-    } catch (error) {
-        console.error('Erro ao recuperar o status do pedido:', error);
-        sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao recuperar o status do seu pedido. Tente novamente mais tarde.', res);
-    }
+    const helpMessage = 'Descreva os seus sintomas que tentaremos encontrar o remédio que melhor resolveria suas dores.';
+    sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
 };
 
 // Função para ver pedidos anteriores
