@@ -144,24 +144,26 @@ const requestMessageToIa = async (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
 };
 
+
 const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
     try {
-        const aiResponse = await getAIResponse(symptoms);
+        // Chama a API em Python para processar os sintomas
+        const response = await axios.post('https://hygia-api-whats.onrender.com/processa_sintomas', {
+            sintomas: symptoms
+        });
+
+        const aiResponse = response.data.remedio;
 
         // Envia a resposta da IA para o usuário
-        sendProactiveMessage(from, aiResponse);
+        sendProactiveMessage(from, `Baseado nos seus sintomas, a IA sugere: ${aiResponse}.`);
 
-        // Atualiza o estado após a resposta
-        userFlows[from].status = 'awaiting_product'; // Atualiza o estado para o próximo fluxo
+        // Atualiza o status do usuário
+        userFlows[from].status = 'awaiting_product'; // Pode ser outro status conforme o fluxo
+
     } catch (error) {
-        console.error('Erro ao chamar a IA:', error);
+        console.error('Erro ao chamar a API Python:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um erro ao processar seus sintomas. Tente novamente mais tarde.', res);
     }
-};
-
-// Simulação de resposta da IA
-const getAIResponse = async (symptoms) => {
-    return `Baseado nos sintomas: "${symptoms}", a IA sugere que você procure por medicamentos como paracetamol ou ibuprofeno. No entanto, é importante consultar um médico.`;
 };
 
 // Função para ver pedidos anteriores

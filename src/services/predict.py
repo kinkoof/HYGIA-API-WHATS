@@ -1,9 +1,10 @@
-import sys
-import json
+from flask import Flask, request, jsonify
 import joblib
 import re
 from nltk.corpus import stopwords
 from nltk.stem import RSLPStemmer
+
+app = Flask(__name__)
 
 modelo_salvo = 'ia/modelo_random_forest.pkl'
 vectorizer_salvo = 'ia/vectorizer.pkl'
@@ -21,11 +22,17 @@ def preprocessar_texto(texto):
     palavras = [stemmer.stem(p) for p in palavras if p not in stop_words]
     return ' '.join(palavras)
 
-input_data = sys.argv[1]
-sintomas_preproc = preprocessar_texto(input_data)
+@app.route('/processa_sintomas', methods=['POST'])
+def processa_sintomas():
+    data = request.get_json()
+    sintomas = data['sintomas']
 
-sintomas_transf = vectorizer.transform([sintomas_preproc])
+    sintomas_preproc = preprocessar_texto(sintomas)
+    sintomas_transf = vectorizer.transform([sintomas_preproc])
 
-remedio = model.predict(sintomas_transf)[0]
+    remedio = model.predict(sintomas_transf)[0]
 
-print(json.dumps({'remedio': remedio}))
+    return jsonify({'remedio': remedio})
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
