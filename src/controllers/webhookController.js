@@ -52,8 +52,7 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
         } else if (buttonResponse === 'help') {
-            // Acionar o fluxo de ajuda com remédios
-            requestMessageToIa(phone_number_id, from, res);
+            requestHelpFromAI(phone_number_id, from, res);
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
         } else {
