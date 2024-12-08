@@ -1,4 +1,4 @@
-const { sendWhatsAppMessage, sendWhatsAppList } = require('../services/whatsappService');
+const { sendWhatsAppMessage, sendWhatsAppList, sendProactiveMessage } = require('../services/whatsappService');
 const db = require('../config/db');
 const userFlows = require('../state/userFlows');
 const { createOrder } = require('./createOrderController');
@@ -85,7 +85,6 @@ exports.handleMessage = (req, res) => {
             if (userText.trim() === '') {
                 sendWhatsAppMessage(phone_number_id, from, 'Por favor, descreva seus sintomas para que possamos ajudar.', res);
             } else {
-                // Envia os sintomas para a IA processar e gerar uma resposta
                 sendWhatsAppMessage(phone_number_id, from, 'Recebemos seus sintomas. Consultando a IA...', res);
                 requestHelpFromAI(phone_number_id, from, userText, res);
             }
@@ -140,20 +139,17 @@ const requestMessageToIa = async (phone_number_id, from, res) => {
         userFlows[from].status = 'sending_symptoms'; // Atualiza o status
     }
 
-    // Mensagem pedindo os sintomas
     const helpMessage = 'Descreva os seus sintomas que tentaremos encontrar o remédio que melhor resolveria suas dores.';
 
-    // Envia a mensagem via WhatsApp
     sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
 };
 
 const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
     try {
-        // Chama a IA para gerar uma resposta com base nos sintomas fornecidos
         const aiResponse = await getAIResponse(symptoms);
 
         // Envia a resposta da IA para o usuário
-        sendWhatsAppMessage(phone_number_id, from, aiResponse, res);
+        sendProactiveMessage(phone_number_id, from, aiResponse, res);
 
         // Atualiza o estado após a resposta
         userFlows[from].status = 'awaiting_product'; // Atualiza o estado para o próximo fluxo
