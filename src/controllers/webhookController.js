@@ -31,7 +31,7 @@ exports.handleMessage = (req, res) => {
     }
 
     const { phone_number_id } = entry.metadata;
-    console.log('numero de celular que envia, bot:', phone_number_id)
+    console.log('Numero de celular que enviou, bot:', phone_number_id);
     const from = messageObject.from;
 
     console.log('Mensagem recebida:', messageObject);
@@ -52,6 +52,7 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
         } else if (buttonResponse === 'help') {
+            // Acionar o fluxo de ajuda com remédios
             requestMessageToIa(phone_number_id, from, res);
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
@@ -72,19 +73,32 @@ exports.handleMessage = (req, res) => {
     else if (messageObject.text) {
         const userText = messageObject.text.body.toLowerCase();
 
+        // Se não existir um fluxo para esse usuário, inicializa um fluxo padrão
         if (!userFlows[from]) {
             userFlows[from] = { status: 'awaiting_product', cart: [] };
             sendWelcomeOptions(phone_number_id, from, res);
             return;
         }
 
-        if (userFlows[from]?.status === 'awaiting_product') {
+        // Lógica para o fluxo de "ajuda com remédios" (solicitando sintomas)
+        if (userFlows[from]?.status === 'sending_symptoms') {
+            if (userText.trim() === '') {
+                sendWhatsAppMessage(phone_number_id, from, 'Por favor, descreva seus sintomas para que possamos ajudar.', res);
+            } else {
+                // Envia os sintomas para a IA processar e gerar uma resposta
+                sendWhatsAppMessage(phone_number_id, from, 'Recebemos seus sintomas. Consultando a IA...', res);
+                requestHelpFromAI(phone_number_id, from, userText, res);
+            }
+        }
+        // Lógica para o fluxo de "compra de produto"
+        else if (userFlows[from]?.status === 'awaiting_product') {
             if (userText.trim() === '') {
                 sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
             } else {
                 processBuyRequest(phone_number_id, from, userText, res);
             }
-        } else if (userFlows[from]?.status === 'cart') {
+        }
+        else if (userFlows[from]?.status === 'cart') {
             if (userText === 'continuar') {
                 continueShopping(phone_number_id, from, res);
             } else if (userText === 'finalizar') {
@@ -96,10 +110,10 @@ exports.handleMessage = (req, res) => {
             sendWelcomeOptions(phone_number_id, from, res);
         }
     }
-    else if (messageObject.location) {  // Adicionando verificação para localização
+    else if (messageObject.location) {  // Verificação para localização
         const location = messageObject.location;
         console.log(`Localização recebida do usuário ${from}:`, location);
-        console.log(userFlows[from]?.status)
+        console.log(userFlows[from]?.status);
 
         if (userFlows[from]?.status === 'awaiting_location') {
             processLocation(phone_number_id, from, location, res);
@@ -118,11 +132,25 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Sauris');
 };
 
+const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
+    try {
+        // Chama a IA para gerar uma resposta com base nos sintomas fornecidos
+        const aiResponse = await getAIResponse(symptoms);
 
-const requestMessageToIa = async (phone_number_id, from, res) => {
+        // Envia a resposta da IA para o usuário
+        sendWhatsAppMessage(phone_number_id, from, aiResponse, res);
 
-    const helpMessage = 'Descreva os seus sintomas que tentaremos encontrar o remédio que melhor resolveria suas dores.';
-    sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
+        // Atualiza o estado após a resposta
+        userFlows[from].status = 'awaiting_product'; // Atualiza o estado para o próximo fluxo
+    } catch (error) {
+        console.error('Erro ao chamar a IA:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um erro ao processar seus sintomas. Tente novamente mais tarde.', res);
+    }
+};
+
+// Simulação de resposta da IA
+const getAIResponse = async (symptoms) => {
+    return `Baseado nos sintomas: "${symptoms}", a IA sugere que você procure por medicamentos como paracetamol ou ibuprofeno. No entanto, é importante consultar um médico.`;
 };
 
 // Função para ver pedidos anteriores
