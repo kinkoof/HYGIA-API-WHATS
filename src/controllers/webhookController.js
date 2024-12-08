@@ -52,7 +52,8 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
         } else if (buttonResponse === 'help') {
-            requestHelpFromAI(phone_number_id, from, res);
+            // Acionar o fluxo de ajuda com remédios
+            requestMessageToIa(phone_number_id, from, res);
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
         } else {
@@ -129,6 +130,21 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
         { id: 'help', title: 'Ajuda com remedios' },
         { id: 'view_orders', title: 'Ver pedidos' }
     ], false, 'Bem-vindo ao Sauris');
+};
+
+
+const requestMessageToIa = async (phone_number_id, from, res) => {
+    if (!userFlows[from]) {
+        userFlows[from] = { status: 'sending_symptoms', cart: [] }; // Inicializa o fluxo se não existir
+    } else {
+        userFlows[from].status = 'sending_symptoms'; // Atualiza o status
+    }
+
+    // Mensagem pedindo os sintomas
+    const helpMessage = 'Descreva os seus sintomas que tentaremos encontrar o remédio que melhor resolveria suas dores.';
+
+    // Envia a mensagem via WhatsApp
+    sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
 };
 
 const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
