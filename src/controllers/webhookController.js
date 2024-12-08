@@ -149,7 +149,7 @@ const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
         const aiResponse = await getAIResponse(symptoms);
 
         // Envia a resposta da IA para o usuário
-        sendProactiveMessage(phone_number_id, aiResponse);
+        sendProactiveMessage(from, aiResponse);
 
         // Atualiza o estado após a resposta
         userFlows[from].status = 'awaiting_product'; // Atualiza o estado para o próximo fluxo
