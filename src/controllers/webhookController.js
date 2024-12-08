@@ -113,7 +113,7 @@ exports.handleMessage = (req, res) => {
 const sendWelcomeOptions = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, 'Bem-vindo ao Sauris, como podemos te ajudar hoje?', res, [
         { id: 'buy', title: 'Comprar medicamentos' },
-        { id: 'track_order', title: 'Acompanhar pedido' },
+        { id: 'help', title: 'Ajuda com remedios' },
         { id: 'view_orders', title: 'Ver pedidos' }
     ], false, 'Bem-vindo ao Sauris');
 };
