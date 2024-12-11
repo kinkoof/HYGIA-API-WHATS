@@ -48,7 +48,7 @@ exports.finishOrder = async (req, res) => {
             { id: 'order_finished', title: 'Sim' },
             { id: 'order_not_finished', title: 'Não' },
         ];
-        const notificationResult = await sendProactiveMessageWithButtons( userPhone, message, buttons);
+        const notificationResult = await sendProactiveMessageWithButtons(userPhone, message, buttons);
 
         if (!notificationResult.success) {
             console.log(`Falha ao enviar notificação para o telefone ${userPhone}.`);
