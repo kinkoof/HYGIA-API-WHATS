@@ -166,7 +166,7 @@ const viewOrders = async (phone_number_id, from, res) => {
     try {
         // Consultar apenas os pedidos finalizados (status 'f')
         const [rows] = await db.execute(
-            `SELECT o.id, o.status, o.total, o.created_at, p.name AS pharmacyName
+            `SELECT o.id, o.status, o.total, o.created_at, p.pharmacyName AS pharmacy_name
             FROM orders o
             JOIN pharmacys p ON o.pharmacy_id = p.id
             WHERE o.user_phone = ? AND o.status = 'f'
@@ -178,6 +178,7 @@ const viewOrders = async (phone_number_id, from, res) => {
 
         if (rows.length === 0) {
             sendProactiveMessage(from, `Você não possui nenhum pedido finalizado`);
+
             userFlows[from].status = '';
             return
         }
@@ -187,7 +188,7 @@ const viewOrders = async (phone_number_id, from, res) => {
             // Formatar o status do pedido
             let statusMessage = 'Pedido finalizado';  // Já sabemos que é 'f', então a mensagem é fixa
 
-            return `Pedido ID: ${order.id}\nStatus: ${statusMessage}\nTotal: R$${parseFloat(order.total).toFixed(2)}\nData: ${new Date(order.created_at).toLocaleDateString()}\nFarmácia: ${order.pharmacyName}`;
+            return `Pedido ID: ${order.id}\nStatus: ${statusMessage}\nTotal: R$${parseFloat(order.total).toFixed(2)}\nData: ${new Date(order.created_at).toLocaleDateString()}\nFarmácia: ${order.pharmacy_name}`;
         }).join('\n\n');
 
         // Enviar a lista de pedidos para o usuário
