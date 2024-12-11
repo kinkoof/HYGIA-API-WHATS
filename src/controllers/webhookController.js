@@ -55,7 +55,12 @@ exports.handleMessage = (req, res) => {
             requestMessageToIa(phone_number_id, from, res);
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
-        } else {
+        } else if (buttonResponse === 'order_finished') {
+            sendProactiveMessage(from, `Muito obrigado por comprar conosco, tenha um otimo dia`);
+        } else if (buttonResponse === 'order_not_finished') {
+            sendProactiveMessage(from, `Estamos analisando o ocorrido e tomaremos medidos o mais rapido possivel`);
+        }
+        else {
             res.sendStatus(200);
         }
     }
@@ -142,7 +147,6 @@ const requestMessageToIa = async (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
 };
 
-
 const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
     try {
         const response = await axios.post('https://ia-hygia.onrender.com/recomendar', {
@@ -215,6 +219,7 @@ const continueShopping = (phone_number_id, from, res) => {
 
 // Solicita a localização do usuário
 const askForLocation = (phone_number_id, from, res) => {
+
     userFlows[from].status = 'awaiting_location';  // Altera o status para aguardar a localização
     sendWhatsAppMessage(
         phone_number_id,
