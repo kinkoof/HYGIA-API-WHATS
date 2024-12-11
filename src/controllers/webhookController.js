@@ -220,8 +220,6 @@ const requestHelpFromAIChat = async (phone_number_id, from, symptoms, res) => {
             sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um problema. Tente novamente mais tarde.', res);
         }
 
-        userFlows[from].status = '';
-
     } catch (error) {
         console.error('Erro ao chamar a API Python:', error);
         sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um erro ao processar seus sintomas. Tente novamente mais tarde.', res);
