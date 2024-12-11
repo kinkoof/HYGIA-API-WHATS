@@ -94,7 +94,7 @@ exports.handleMessage = (req, res) => {
                 requestHelpFromAI(phone_number_id, from, userText, res);
             }
         }
-        else if (userFlows[from]?.status === '') {
+        else if (userFlows[from]?.status === 'requesting') {
             requestHelpFromAIChat(phone_number_id, from, userText, res);
         }
 
@@ -142,9 +142,9 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
 
 const sendWelcomeMessage = (phone_number_id, from, res) => {
     if (!userFlows[from]) {
-        userFlows[from] = { status: '', cart: [] };
+        userFlows[from] = { status: 'requesting', cart: [] };
     } else {
-        userFlows[from].status = '';
+        userFlows[from].status = 'requesting';
     }
     sendWhatsAppMessage(
         phone_number_id,
