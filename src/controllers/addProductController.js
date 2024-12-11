@@ -10,10 +10,10 @@ exports.addProduct = async (req, res) => {
     try {
         const query = `
             INSERT INTO products
-            (name, category, pharmacy, price, prescription)
-            VALUES (?, ?, ?, ?, ?)
+            (name, pharmacy, price)
+            VALUES (?, ?, ?)
         `;
-        const values = [name, category, pharmacy, price, prescription];
+        const values = [name, pharmacy, price];
 
         const [result] = await db.execute(query, values);
 
