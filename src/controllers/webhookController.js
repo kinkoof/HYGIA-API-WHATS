@@ -207,7 +207,7 @@ const startBuyFlow = (phone_number_id, from, res) => {
 // Continuação da compra
 const continueShopping = (phone_number_id, from, res) => {
     userFlows[from].status = 'awaiting_product'; // Atualiza o status para aguardar um novo produto
-    sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Continue escolhendo os produtos que deseja.', res);
+    sendWhatsAppMessage(phone_number_id, from, 'Ótimo! Digite o nome de outro produto que deseja.', res);
 };
 
 // Solicita a localização do usuário
