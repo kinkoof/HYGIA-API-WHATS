@@ -52,7 +52,6 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
         } else if (buttonResponse === 'help') {
-            // Acionar o fluxo de ajuda com remédios
             requestMessageToIa(phone_number_id, from, res);
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
@@ -131,7 +130,6 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Sauris');
 };
 
-
 const requestMessageToIa = async (phone_number_id, from, res) => {
     if (!userFlows[from]) {
         userFlows[from] = { status: 'sending_symptoms', cart: [] };
@@ -168,7 +166,7 @@ const viewOrders = async (from, phone_number_id, res) => {
     try {
         // Consultar apenas os pedidos finalizados (status 'f')
         const [rows] = await db.execute(
-            `SELECT id, status, total, created_at, pharmacy
+            `SELECT id, status, total, created_at, pharmacy_id
             FROM orders
             WHERE user_phone = ? AND status = 'f'
             ORDER BY created_at DESC`,
