@@ -190,7 +190,7 @@ const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
 const requestHelpFromAIChat = async (phone_number_id, from, symptoms, res) => {
     try {
         const response = await axios.post('https://ia-hygia.onrender.com/chat', {
-            sintomas: symptoms
+            mensagem: symptoms
         });
 
         const aiResponse = response.data.funcao;
