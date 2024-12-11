@@ -251,27 +251,30 @@ const processLocation = async (phone_number_id, from, location, res) => {
         if (orderResult.success) {
             console.log(`Pedido ${orderResult.orderId} criado com sucesso para o usuário ${from}.`);
 
-            // Criando a sessão de Checkout do Stripe
-            const session = await stripe.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: cart.map(item => ({
-                    price_data: {
-                        currency: 'brl',
-                        product_data: {
-                            name: item.name,
-                        },
-                        unit_amount: parseFloat(item.price) * 100,
-                    },
-                    quantity: item.quantity || 1,
-                })),
-                mode: 'payment',
-                success_url: 'https://www.seusite.com/sucesso?session_id={CHECKOUT_SESSION_ID}', // URL de sucesso
-                cancel_url: 'https://www.seusite.com/cancelado',
-            });
+            // // Criando a sessão de Checkout do Stripe
+            // const session = await stripe.checkout.sessions.create({
+            //     payment_method_types: ['card'],
+            //     line_items: cart.map(item => ({
+            //         price_data: {
+            //             currency: 'brl',
+            //             product_data: {
+            //                 name: item.name,
+            //             },
+            //             unit_amount: parseFloat(item.price) * 100,
+            //         },
+            //         quantity: item.quantity || 1,
+            //     })),
+            //     mode: 'payment',
+            //     success_url: 'https://www.seusite.com/sucesso?session_id={CHECKOUT_SESSION_ID}', // URL de sucesso
+            //     cancel_url: 'https://www.seusite.com/cancelado',
+            // });
 
-            // Enviar o link de pagamento para o cliente
-            const paymentMessage = `Seu pedido foi criado com sucesso. Para concluir o pagamento, clique no link abaixo:\n${session.url}`;
+            // // Enviar o link de pagamento para o cliente
+            const paymentMessage = `Seu pedido foi criado com sucesso. Logo o notificaremos conforme a farmacia aceite`;
+            // sendWhatsAppMessage(phone_number_id, from, paymentMessage, res);
+
             sendWhatsAppMessage(phone_number_id, from, paymentMessage, res);
+
 
         } else {
             console.error('Erro ao criar o pedido:', orderResult.error);
