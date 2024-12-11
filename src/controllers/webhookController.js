@@ -147,7 +147,7 @@ const requestMessageToIa = async (phone_number_id, from, res) => {
 
 const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
     try {
-        const response = await axios.post('https://hygia-api-whats.onrender.com/ia/process_symptoms', {
+        const response = await axios.post('https://ia-hygia.onrender.com/recomendar', {
             sintomas: symptoms
         });
 
@@ -195,7 +195,6 @@ const viewOrders = async (from, phone_number_id, res) => {
         sendWhatsAppMessage(phone_number_id, from, 'Houve um erro ao buscar seus pedidos finalizados. Tente novamente mais tarde.', res);
     }
 };
-
 
 // Inicia o fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
