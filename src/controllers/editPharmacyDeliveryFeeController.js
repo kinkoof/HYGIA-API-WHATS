@@ -14,7 +14,7 @@ exports.editPharmacyDeliveryFee = async (req, res) => {
     }
 
     try {
-        const query = `UPDATE pharmacys SET deliveryFee = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`;
+        const query = `UPDATE pharmacys SET deliveryFee = ? WHERE id = ?`;
         await db.execute(query, [deliveryFee, userId]);
 
         return res.status(200).json({ message: 'Taxa de entrega atualizada com sucesso!' });
