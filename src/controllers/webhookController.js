@@ -270,7 +270,7 @@ const processLocation = async (phone_number_id, from, location, res) => {
             // });
 
             // // Enviar o link de pagamento para o cliente
-            const paymentMessage = `Seu pedido foi criado com sucesso. Logo o notificaremos conforme a farmacia aceite`;
+            const paymentMessage = `Seu pedido foi criado com sucesso. Logo o notificaremos o progresso de seu pedido`;
             // sendWhatsAppMessage(phone_number_id, from, paymentMessage, res);
 
             sendWhatsAppMessage(phone_number_id, from, paymentMessage, res);
