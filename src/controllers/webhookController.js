@@ -195,6 +195,8 @@ const requestHelpFromAIChat = async (phone_number_id, from, symptoms, res) => {
 
         const aiResponse = response.data.funcao;
 
+        console.log(aiResponse)
+
         if (aiResponse === 'requestMessageToIa') {
             userFlows[from].status = '';
             requestMessageToIa(phone_number_id, from, res);
