@@ -258,9 +258,8 @@ const viewOrders = async (phone_number_id, from, res) => {
 
 // Inicia o fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
-    if (!userFlows[from]) {
-        userFlows[from] = { status: 'awaiting_product', cart: [] }; // Inicializa o carrinho vazio
-    }
+    userFlows[from] = { status: 'awaiting_product', cart: [] };
+
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
