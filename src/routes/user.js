@@ -29,9 +29,9 @@ router.get('/categories', getCategorysController.getCategories);
 
 router.get('/info', profileController.getPharmacyProfile);
 
-router.get('/delivery/fee', editPharmacyDeliveryFeeController.editPharmacyDeliveryFee);
+router.post('/edit/delivery/fee', editPharmacyDeliveryFeeController.editPharmacyDeliveryFee);
 
-router.post('/edit/delivery/fee', getPharmacyDeliveryFeeController.getPharmacyDeliveryFee);
+router.get('/delivery/fee', getPharmacyDeliveryFeeController.getPharmacyDeliveryFee);
 
 router.get('/orders', getOrdersController.getOrdersByPharmacy);
 
