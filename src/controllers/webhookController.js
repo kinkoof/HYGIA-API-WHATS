@@ -52,7 +52,8 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
         } else if (buttonResponse === 'help') {
-
+            // Acionar o fluxo de ajuda com remédios
+            requestMessageToIa(phone_number_id, from, res);
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
         } else {
@@ -85,6 +86,7 @@ exports.handleMessage = (req, res) => {
                 sendWhatsAppMessage(phone_number_id, from, 'Por favor, descreva seus sintomas para que possamos ajudar.', res);
             } else {
                 sendWhatsAppMessage(phone_number_id, from, 'Recebemos seus sintomas. Consultando a IA...', res);
+                requestHelpFromAI(phone_number_id, from, userText, res);
             }
         }
         // Lógica para o fluxo de "compra de produto"
@@ -129,6 +131,37 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Sauris');
 };
 
+
+const requestMessageToIa = async (phone_number_id, from, res) => {
+    if (!userFlows[from]) {
+        userFlows[from] = { status: 'sending_symptoms', cart: [] };
+    } else {
+        userFlows[from].status = 'sending_symptoms';
+    }
+
+    const helpMessage = 'Descreva os seus sintomas que tentaremos encontrar o remédio que melhor resolveria suas dores.';
+
+    sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
+};
+
+
+const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
+    try {
+        const response = await axios.post('https://hygia-api-whats.onrender.com/ia/process_symptoms', {
+            sintomas: symptoms
+        });
+
+        const aiResponse = response.data.remedio;
+
+        sendProactiveMessage(from, `Baseado nos seus sintomas, a IA sugere: ${aiResponse}.`);
+
+        userFlows[from].status = 'awaiting_product';
+
+    } catch (error) {
+        console.error('Erro ao chamar a API Python:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um erro ao processar seus sintomas. Tente novamente mais tarde.', res);
+    }
+};
 
 // Função para ver pedidos anteriores
 const viewOrders = async (from, phone_number_id, res) => {
