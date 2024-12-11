@@ -224,12 +224,7 @@ const processLocation = async (phone_number_id, from, location, res) => {
                     },
                     quantity: item.quantity || 1,
                 })),
-                after_completion: {
-                    hosted_confirmation: {
-                        custom_message: 'pagamento realizado com sucessso'
-                    },
-                    type: "hosted_confirmation"
-                },
+                mode: 'payment',
             });
 
             // Enviar o link de pagamento para o cliente
