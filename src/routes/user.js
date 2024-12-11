@@ -14,6 +14,7 @@ const getOrdersController = require('../controllers/getOrdersController');
 const acceptOrderController = require('../controllers/acceptOrderController')
 const deliveryOrderController = require('../controllers/deliveryOrderController')
 const denyOrderController = require('../controllers/denyOrderController')
+const finishOrderController = require('../controllers/finishOrderController')
 
 router.post('/register', registrationController.registerUser);
 
@@ -28,6 +29,8 @@ router.get('/info', profileController.getPharmacyProfile);
 router.get('/orders', getOrdersController.getOrdersByPharmacy);
 
 router.post('/accept/orders', acceptOrderController.acceptOrder);
+
+router.post('/finish/orders', finishOrderController.finishOrder);
 
 router.post('/delivery/orders', deliveryOrderController.deliveryOrder);
 
