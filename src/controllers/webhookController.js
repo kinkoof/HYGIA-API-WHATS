@@ -80,7 +80,8 @@ exports.handleMessage = (req, res) => {
         // Se não existir um fluxo para esse usuário, inicializa um fluxo padrão
         if (!userFlows[from]) {
             userFlows[from] = { status: 'awaiting_product', cart: [] };
-            sendWelcomeOptions(phone_number_id, from, res);
+            // sendWelcomeOptions(phone_number_id, from, res);
+            sendWelcomeMessage(phone_number_id, from, res)
             return;
         }
 
@@ -93,6 +94,10 @@ exports.handleMessage = (req, res) => {
                 requestHelpFromAI(phone_number_id, from, userText, res);
             }
         }
+        else if (userFlows[from]?.status === 'requesting') {
+            requestHelpFromAIChat(phone_number_id, from, userText, res);
+        }
+
         // Lógica para o fluxo de "compra de produto"
         else if (userFlows[from]?.status === 'awaiting_product') {
             if (userText.trim() === '') {
@@ -135,6 +140,22 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Sauris');
 };
 
+const sendWelcomeMessage = (phone_number_id, from, res) => {
+    if (!userFlows[from]) {
+        userFlows[from] = { status: 'requesting', cart: [] };
+    } else {
+        userFlows[from].status = 'requesting';
+    }
+    sendWhatsAppMessage(
+        phone_number_id,
+        from,
+        'Olá, estou aqui para te auxiliar, me diga o que você deseja fazer hoje?',
+        res
+    );
+
+};
+
+
 const requestMessageToIa = async (phone_number_id, from, res) => {
     if (!userFlows[from]) {
         userFlows[from] = { status: 'sending_symptoms', cart: [] };
@@ -145,7 +166,7 @@ const requestMessageToIa = async (phone_number_id, from, res) => {
     const helpMessage = "Descreva seus sintomas e recomendaremos um profissional mais indicado para o seu caso."
 
     sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
-};
+}
 
 const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
     try {
@@ -156,6 +177,36 @@ const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
         const aiResponse = response.data.remedio;
 
         sendProactiveMessage(from, `Com os sintomas que você descreveu, a IA recomenda que você consulte um: ${aiResponse}.`);
+
+        userFlows[from].status = '';
+
+    } catch (error) {
+        console.error('Erro ao chamar a API Python:', error);
+        sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um erro ao processar seus sintomas. Tente novamente mais tarde.', res);
+    }
+};
+
+
+const requestHelpFromAIChat = async (phone_number_id, from, symptoms, res) => {
+    try {
+        const response = await axios.post('https://ia-hygia.onrender.com/chat', {
+            sintomas: symptoms
+        });
+
+        const aiResponse = response.data.funcao;
+
+        if (aiResponse === 'requestMessageToIa') {
+            userFlows[from].status = '';
+            requestMessageToIa(phone_number_id, from, res);
+        } else if (aiResponse === 'viewOrders') {
+            userFlows[from].status = '';
+            viewOrders(phone_number_id, from, res);
+        } else if (aiResponse === 'startBuyFlow') {
+            userFlows[from].status = '';
+            startBuyFlow(phone_number_id, from, res);
+        } else {
+            sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um problema. Tente novamente mais tarde.', res);
+        }
 
         userFlows[from].status = '';
 
