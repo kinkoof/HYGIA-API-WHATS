@@ -155,7 +155,7 @@ const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
 
         sendProactiveMessage(from, `Com os sintomas que você descreveu, a IA recomenda que você consulte um: ${aiResponse}.`);
 
-        userFlows[from].status = 'awaiting_product';
+        userFlows[from].status = '';
 
     } catch (error) {
         console.error('Erro ao chamar a API Python:', error);
