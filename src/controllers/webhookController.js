@@ -52,8 +52,7 @@ exports.handleMessage = (req, res) => {
         } else if (buttonResponse === 'confirm_purchase') {
             confirmPurchase(phone_number_id, from, res);
         } else if (buttonResponse === 'help') {
-            // Acionar o fluxo de ajuda com remédios
-            requestMessageToIa(phone_number_id, from, res);
+
         } else if (buttonResponse === 'view_orders') {
             viewOrders(phone_number_id, from, res);
         } else {
@@ -86,7 +85,6 @@ exports.handleMessage = (req, res) => {
                 sendWhatsAppMessage(phone_number_id, from, 'Por favor, descreva seus sintomas para que possamos ajudar.', res);
             } else {
                 sendWhatsAppMessage(phone_number_id, from, 'Recebemos seus sintomas. Consultando a IA...', res);
-                requestHelpFromAI(phone_number_id, from, userText, res);
             }
         }
         // Lógica para o fluxo de "compra de produto"
@@ -131,40 +129,6 @@ const sendWelcomeOptions = (phone_number_id, from, res) => {
     ], false, 'Bem-vindo ao Sauris');
 };
 
-
-const requestMessageToIa = async (phone_number_id, from, res) => {
-    if (!userFlows[from]) {
-        userFlows[from] = { status: 'sending_symptoms', cart: [] }; // Inicializa o fluxo se não existir
-    } else {
-        userFlows[from].status = 'sending_symptoms'; // Atualiza o status
-    }
-
-    const helpMessage = 'Descreva os seus sintomas que tentaremos encontrar o remédio que melhor resolveria suas dores.';
-
-    sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
-};
-
-
-const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
-    try {
-        // Chama a API em Python para processar os sintomas
-        const response = await axios.post('https://hygia-api-whats.onrender.com/processa_sintomas', {
-            sintomas: symptoms
-        });
-
-        const aiResponse = response.data.remedio;
-
-        // Envia a resposta da IA para o usuário
-        sendProactiveMessage(from, `Baseado nos seus sintomas, a IA sugere: ${aiResponse}.`);
-
-        // Atualiza o status do usuário
-        userFlows[from].status = 'awaiting_product'; // Pode ser outro status conforme o fluxo
-
-    } catch (error) {
-        console.error('Erro ao chamar a API Python:', error);
-        sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um erro ao processar seus sintomas. Tente novamente mais tarde.', res);
-    }
-};
 
 // Função para ver pedidos anteriores
 const viewOrders = async (from, phone_number_id, res) => {
@@ -261,6 +225,8 @@ const processLocation = async (phone_number_id, from, location, res) => {
                     quantity: item.quantity || 1,
                 })),
                 mode: 'payment',
+                success_url: 'https://www.seusite.com/sucesso?session_id={CHECKOUT_SESSION_ID}', // URL de sucesso
+                cancel_url: 'https://www.seusite.com/cancelado',
             });
 
             // Enviar o link de pagamento para o cliente
