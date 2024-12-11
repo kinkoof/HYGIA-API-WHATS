@@ -395,8 +395,9 @@ const confirmPurchase = async (phone_number_id, from, res) => {
 const processBuyRequest = async (phone_number_id, from, productName, res) => {
     try {
         const [rows] = await db.execute(
-            `SELECT p.id, p.name, p.price
+            `SELECT p.id, p.name, p.price, f.deliveryFee
             FROM products p
+            JOIN pharmacys f ON p.pharmacy_id = f.id
             WHERE p.name LIKE ?`,
             [`%${productName}%`]
         );
@@ -406,13 +407,14 @@ const processBuyRequest = async (phone_number_id, from, productName, res) => {
             return;
         }
 
+        // Mapeando os produtos para incluir a taxa de entrega
         const listSections = [
             {
                 title: 'Produtos Encontrados',
                 rows: rows.map((product) => ({
                     id: `product_${product.id}`,
-                    title: product.name,
-                    description: `R$${parseFloat(product.price).toFixed(2)}`
+                    title: `${product.name} - R$${parseFloat(product.price).toFixed(2)}`,
+                    description: `Taxa de Entrega: R$${parseFloat(product.deliveryFee).toFixed(2)}`
                 }))
             }
         ];
