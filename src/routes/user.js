@@ -55,9 +55,4 @@ router.put('/edit/product/:id', editProductController.editProduct);
 
 router.delete('/delete/product/:id', deleteProductController.deleteProduct);
 
-
-
-
-
-
 module.exports = router;
