@@ -166,7 +166,7 @@ const viewOrders = async (phone_number_id, from, res) => {
     try {
         // Consultar apenas os pedidos finalizados (status 'f')
         const [rows] = await db.execute(
-            `SELECT o.id, o.status, o.total, o.created_at, p.name AS pharmacy_name
+            `SELECT o.id, o.status, o.total, o.created_at, p.name AS pharmacyName
             FROM orders o
             JOIN pharmacys p ON o.pharmacy_id = p.id
             WHERE o.user_phone = ? AND o.status = 'f'
