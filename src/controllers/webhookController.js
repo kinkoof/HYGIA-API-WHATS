@@ -198,13 +198,13 @@ const requestHelpFromAIChat = async (phone_number_id, from, symptoms, res) => {
         console.log(aiResponse)
 
         if (aiResponse === 'requestMessageToIa') {
-            userFlows[from].status = '';
+            userFlows[from].status = 'sending_symptoms';
             requestMessageToIa(phone_number_id, from, res);
         } else if (aiResponse === 'viewOrders') {
             userFlows[from].status = '';
             viewOrders(phone_number_id, from, res);
         } else if (aiResponse === 'startBuyFlow') {
-            userFlows[from].status = '';
+            userFlows[from].status = 'awaiting_product';
             startBuyFlow(phone_number_id, from, res);
         } else {
             sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um problema. Tente novamente mais tarde.', res);
