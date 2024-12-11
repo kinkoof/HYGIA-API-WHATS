@@ -3,7 +3,7 @@ const db = require('../config/db');
 exports.addProduct = async (req, res) => {
     const { name, category, pharmacy, price, prescription } = req.body;
 
-    if (!name || !category || !pharmacy || !price || !prescription) {
+    if (!name || !pharmacy || !price ) {
         return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
     }
 
