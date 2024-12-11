@@ -162,7 +162,7 @@ const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
 };
 
 // Função para ver pedidos anteriores
-const viewOrders = async (from, phone_number_id, res) => {
+const viewOrders = async (phone_number_id, from, res) => {
     try {
         // Consultar apenas os pedidos finalizados (status 'f')
         const [rows] = await db.execute(
