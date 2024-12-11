@@ -224,9 +224,12 @@ const processLocation = async (phone_number_id, from, location, res) => {
                     },
                     quantity: item.quantity || 1,
                 })),
-                mode: 'payment',
-                success_url: 'https://www.seusite.com/sucesso?session_id={CHECKOUT_SESSION_ID}', // URL de sucesso
-                cancel_url: 'https://www.seusite.com/cancelado',
+                after_completion: {
+                    hosted_confirmation: {
+                        custom_message: 'pagamento realizado com sucessso'
+                    },
+                    type: "hosted_confirmation"
+                },
             });
 
             // Enviar o link de pagamento para o cliente
