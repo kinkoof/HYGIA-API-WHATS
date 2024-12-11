@@ -173,6 +173,9 @@ const viewOrders = async (from, phone_number_id, res) => {
             [from]
         );
 
+        console.log('chegou aqui')
+        console.log(rows)
+
         if (rows.length === 0) {
             sendWhatsAppMessage(phone_number_id, from, 'Você ainda não tem pedidos finalizados.', res);
             return;
