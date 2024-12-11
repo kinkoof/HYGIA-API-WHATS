@@ -126,7 +126,7 @@ exports.handleMessage = (req, res) => {
 const sendWelcomeOptions = (phone_number_id, from, res) => {
     sendWhatsAppMessage(phone_number_id, from, 'Bem-vindo ao Sauris, como podemos te ajudar hoje?', res, [
         { id: 'buy', title: 'Comprar medicamentos' },
-        { id: 'help', title: 'Ajuda com remedios' },
+        { id: 'help', title: 'Buscar Orientação' },
         { id: 'view_orders', title: 'Ver pedidos' }
     ], false, 'Bem-vindo ao Sauris');
 };
@@ -139,7 +139,7 @@ const requestMessageToIa = async (phone_number_id, from, res) => {
         userFlows[from].status = 'sending_symptoms';
     }
 
-    const helpMessage = 'Descreva os seus sintomas que tentaremos encontrar o remédio que melhor resolveria suas dores.';
+    const helpMessage = "Descreva seus sintomas e recomendaremos um profissional mais indicado para o seu caso."
 
     sendWhatsAppMessage(phone_number_id, from, helpMessage, res);
 };
@@ -153,7 +153,7 @@ const requestHelpFromAI = async (phone_number_id, from, symptoms, res) => {
 
         const aiResponse = response.data.remedio;
 
-        sendProactiveMessage(from, `Baseado nos seus sintomas, a IA sugere: ${aiResponse}.`);
+        sendProactiveMessage(from, `Com os sintomas que você descreveu, a IA recomenda que você consulte um: ${aiResponse}.`);
 
         userFlows[from].status = 'awaiting_product';
 
