@@ -5,8 +5,8 @@ const db = require('../config/db'); // Configuração do banco de dados
 exports.getOrdersByPharmacy = async (req, res) => {
     const userId = req.query.userId; // Pega o userId dos parâmetros da URL (query string)
     const page = parseInt(req.query.page) || 1; // Página atual (padrão: 1)
-    const limit = parseInt(req.query.limit) || 10; // Itens por página (padrão: 10)
-    const offset = (page - 1) * limit; // Calcular o offset
+    const limit = parseInt(req.query.limit) || 10; // Limite de itens por página (padrão: 10)
+    const offset = (page - 1) * limit; // Calcula o deslocamento para o SQL
 
     // Verifica se o userId foi enviado
     if (!userId) {
@@ -14,37 +14,24 @@ exports.getOrdersByPharmacy = async (req, res) => {
     }
 
     try {
-        // Consulta para obter os pedidos com paginação
+        // Consulta para obter os pedidos da farmácia com o userId, com paginação
         const [rows] = await db.execute(
-            `SELECT * FROM orders
-            WHERE pharmacy_id = ?
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?`,
+            'SELECT * FROM orders WHERE pharmacy_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             [userId, limit, offset]
         );
 
-        // Verifica se encontrou os pedidos
-        if (rows.length === 0) {
-            return res.status(404).json({ message: 'Nenhum pedido encontrado para essa farmácia.' });
-        }
-
-        // Consulta para contar o total de pedidos (sem paginação)
-        const [countResult] = await db.execute(
-            `SELECT COUNT(*) as total FROM orders WHERE pharmacy_id = ?`,
+        // Consulta para obter o número total de pedidos
+        const [[{ total }]] = await db.execute(
+            'SELECT COUNT(*) AS total FROM orders WHERE pharmacy_id = ?',
             [userId]
         );
-        const totalOrders = countResult[0].total;
-        const totalPages = Math.ceil(totalOrders / limit);
 
-        // Retorna os pedidos com informações de paginação
+        // Retorna os pedidos da farmácia com paginação e o número total
         return res.status(200).json({
-            data: rows,
-            pagination: {
-                currentPage: page,
-                totalOrders,
-                totalPages,
-                pageSize: limit,
-            },
+            orders: rows,
+            total, // Total de pedidos
+            currentPage: page,
+            totalPages: Math.ceil(total / limit) // Total de páginas
         });
     } catch (error) {
         console.error('Erro ao buscar os pedidos da farmácia:', error);
