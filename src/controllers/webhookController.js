@@ -195,16 +195,26 @@ const requestHelpFromAIChat = async (phone_number_id, from, symptoms, res) => {
 
         const aiResponse = response.data.funcao;
 
-        console.log(aiResponse)
-
         if (aiResponse === 'requestMessageToIa') {
-            userFlows[from].status = 'sending_symptoms';
+            if (!userFlows[from]) {
+                userFlows[from] = { status: 'sending_symptoms', cart: [] };
+            } else {
+                userFlows[from].status = 'sending_symptoms';
+            }
             requestMessageToIa(phone_number_id, from, res);
         } else if (aiResponse === 'viewOrders') {
-            userFlows[from].status = '';
+            if (!userFlows[from]) {
+                userFlows[from] = { status: '', cart: [] };
+            } else {
+                userFlows[from].status = '';
+            }
             viewOrders(phone_number_id, from, res);
         } else if (aiResponse === 'startBuyFlow') {
-            userFlows[from].status = 'awaiting_product';
+            if (!userFlows[from]) {
+                userFlows[from] = { status: 'awaiting_product', cart: [] };
+            } else {
+                userFlows[from].status = 'awaiting_product';
+            }
             startBuyFlow(phone_number_id, from, res);
         } else {
             sendWhatsAppMessage(phone_number_id, from, 'Desculpe, houve um problema. Tente novamente mais tarde.', res);
@@ -258,8 +268,13 @@ const viewOrders = async (phone_number_id, from, res) => {
 
 // Inicia o fluxo de compra
 const startBuyFlow = (phone_number_id, from, res) => {
-    userFlows[from] = { status: 'awaiting_product', cart: [] };
 
+    if (!userFlows[from]) {
+        userFlows[from] = { status: 'awaiting_product', cart: [] };
+    } else {
+        userFlows[from].status = 'awaiting_product';
+    }
+    console.log(userFlows[from].status);
     sendWhatsAppMessage(phone_number_id, from, 'Por favor, informe o nome do produto que deseja comprar.', res);
 };
 
