@@ -175,8 +175,7 @@ const viewOrders = async (from, phone_number_id, res) => {
 
 
         if (rows.length === 0) {
-            const message = "Você não possui nenhum pedido finalizado"
-            sendWhatsAppMessage(phone_number_id, from, message, res);
+            sendProactiveMessage(from, `Você não possui nenhum pedido finalizado`);
 
             userFlows[from].status = '';
         }
